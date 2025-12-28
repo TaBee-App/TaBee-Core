@@ -56,8 +56,6 @@ htmlcov/
 # =========================
 # Large or generated audio files should NOT be committed
 data/
-*.wav
-*.mp3
 *.flac
 *.ogg
 *.aiff
