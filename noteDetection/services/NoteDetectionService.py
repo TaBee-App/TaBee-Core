@@ -1,5 +1,5 @@
-﻿from .NoteDetectionPipeline import NoteDetectionPipeline
-from ..ports.AudioReader import AudioReader
+﻿from ..ports.AudioReader import AudioReader
+from ..services.NoteDetectionPipeline import NoteDetectionPipeline
 from ..domain.DetectionResult import DetectionResult
 
 
