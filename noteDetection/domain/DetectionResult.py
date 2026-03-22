@@ -1,6 +1,7 @@
 ﻿from typing import List
 
 from .DetectedNote import DetectedNote
+from .PluckCandidate import PluckCandidate
 
 
 class DetectionResult:
@@ -10,11 +11,13 @@ class DetectionResult:
         onset_times_s: List[float],
         pitch_hz: List[float],
         notes: List[DetectedNote],
+        pluck_candidates: List[PluckCandidate] | None = None,
     ):
         self._tempo_bpm = int(tempo_bpm)
         self._onset_times_s = list(onset_times_s)
         self._pitch_hz = list(pitch_hz)
         self._notes = list(notes)
+        self._pluck_candidates = list(pluck_candidates or [])
 
     @property
     def tempo_bpm(self) -> int:
@@ -31,3 +34,7 @@ class DetectionResult:
     @property
     def notes(self) -> List[DetectedNote]:
         return list(self._notes)
+
+    @property
+    def pluck_candidates(self) -> List[PluckCandidate]:
+        return list(self._pluck_candidates)
