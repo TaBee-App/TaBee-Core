@@ -8,6 +8,8 @@ import numpy as np
 
 from ..domain.DetectedNote import DetectedNote
 from ..domain.DetectionResult import DetectionResult
+from ..ports.PitchEstimator import PitchEstimator
+from ..ports.PluckDetector import PluckDetector
 from .BassPluckDetector import BassPluckDetector, PluckDetectionConfig
 from .OnsetPitchEstimator import OnsetPitchEstimator, PitchConfig
 
@@ -42,13 +44,19 @@ class NoteDetectionPipeline:
         *,
         preprocess: Optional[PreprocessConfig] = None,
         pluck: Optional[PluckDetectionConfig] = None,
+        pluck_detector: Optional[PluckDetector] = None,
         pitch: Optional[PitchConfig] = None,
+        pitch_estimator: Optional[PitchEstimator] = None,
         tempo: Optional[TempoConfig] = None,
     ) -> None:
         self._pre_cfg = preprocess or PreprocessConfig()
         self._tempo_cfg = tempo or TempoConfig()
-        self._pluck_detector = BassPluckDetector(pluck or PluckDetectionConfig())
-        self._pitch_estimator = OnsetPitchEstimator(pitch or PitchConfig())
+        self._pluck_detector = pluck_detector or BassPluckDetector(
+            pluck or PluckDetectionConfig()
+        )
+        self._pitch_estimator = pitch_estimator or OnsetPitchEstimator(
+            pitch or PitchConfig()
+        )
 
     def detect(self, y: np.ndarray, sr: int) -> DetectionResult:
         y = self._preprocess(y)

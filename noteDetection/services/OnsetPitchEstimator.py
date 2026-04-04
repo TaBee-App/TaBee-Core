@@ -7,6 +7,7 @@ import librosa
 import numpy as np
 
 from ..domain.PluckCandidate import PluckCandidate
+from ..ports.PitchEstimator import PitchEstimator
 
 
 @dataclass(frozen=True)
@@ -25,7 +26,7 @@ class PitchConfig:
     min_confidence: float = 0.01
 
 
-class OnsetPitchEstimator:
+class OnsetPitchEstimator(PitchEstimator):
     """Reads stable bass pitch after pluck candidates."""
 
     def __init__(self, config: PitchConfig) -> None:

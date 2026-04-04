@@ -3,9 +3,10 @@ from __future__ import annotations
 from typing import Sequence
 
 from ..domain.FretPosition import FretPosition
+from ..ports.TabOptimizer import TabOptimizer
 
 
-class PlayabilityOptimizer:
+class PlayabilityOptimizer(TabOptimizer):
     def __init__(self, weight_fret: float = 1.0, weight_string: float = 1.5):
         self._weight_fret = float(weight_fret)
         self._weight_string = float(weight_string)

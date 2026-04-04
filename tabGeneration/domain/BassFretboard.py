@@ -3,9 +3,10 @@ from __future__ import annotations
 from typing import Optional
 
 from .FretPosition import FretPosition
+from ..ports.Fretboard import Fretboard
 
 
-class BassFretboard:
+class BassFretboard(Fretboard):
     """
     Standard 4-string bass fretboard.
 

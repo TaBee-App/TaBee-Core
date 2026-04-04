@@ -9,6 +9,8 @@ from noteDetection.domain.DetectionResult import DetectionResult
 from ..domain.BassFretboard import BassFretboard
 from ..domain.FretPosition import FretPosition
 from ..domain.TabNoteAssignment import TabNoteAssignment
+from ..ports.Fretboard import Fretboard
+from ..ports.TabOptimizer import TabOptimizer
 from .PlayabilityOptimizer import PlayabilityOptimizer
 
 
@@ -22,8 +24,8 @@ class TabGenerationService:
 
     def __init__(
         self,
-        fretboard: Optional[BassFretboard] = None,
-        optimizer: Optional[PlayabilityOptimizer] = None,
+        fretboard: Optional[Fretboard] = None,
+        optimizer: Optional[TabOptimizer] = None,
         bass_octave_threshold_midi: int = 45,
     ) -> None:
         self._fretboard = fretboard or BassFretboard()

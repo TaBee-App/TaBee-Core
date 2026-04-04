@@ -7,6 +7,7 @@ import librosa
 import numpy as np
 
 from ..domain.PluckCandidate import PluckCandidate
+from ..ports.PluckDetector import PluckDetector
 
 
 @dataclass(frozen=True)
@@ -31,7 +32,7 @@ class PluckDetectionConfig:
     spectral_weight: float = 0.35
 
 
-class BassPluckDetector:
+class BassPluckDetector(PluckDetector):
     """Bass-oriented pluck detector using envelope rise + spectral flux."""
 
     def __init__(self, config: PluckDetectionConfig) -> None:

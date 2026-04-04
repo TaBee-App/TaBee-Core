@@ -16,7 +16,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "audio",
         nargs="?",
-        default="queen.wav",
+        default="test2.wav",
         help="Audio file to analyze. Defaults to queen.wav in the cli directory.",
     )
     parser.add_argument(
