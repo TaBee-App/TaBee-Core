@@ -1,37 +1,47 @@
-class BassFretboard:
+from __future__ import annotations
+
+from typing import Optional
+
+from .FretPosition import FretPosition
+from ..ports.Fretboard import Fretboard
+
+
+class BassFretboard(Fretboard):
+    """
+    Standard 4-string bass fretboard.
+
+    String numbers are 1..4 from highest pitched string to lowest:
+    1 -> G2 (MIDI 43)
+    2 -> D2 (MIDI 38)
+    3 -> A1 (MIDI 33)
+    4 -> E1 (MIDI 28)
+    """
+
     def __init__(self, max_frets: int = 24):
-        # 4 Telli Standart Bas Gitar Akordu (Açık tel MIDI numaraları)
-        # 4. Tel (En kalın): E1 (MIDI 28)
-        # 3. Tel: A1 (MIDI 33)
-        # 2. Tel: D2 (MIDI 38)
-        # 1. Tel (En ince): G2 (MIDI 43)
-        self.string_tunings = {
-            1: 43, # G
-            2: 38, # D
-            3: 33, # A
-            4: 28  # E
+        self._string_tunings = {
+            1: 43,  # G2
+            2: 38,  # D2
+            3: 33,  # A1
+            4: 28,  # E1
         }
-        self.max_frets = max_frets
+        self._max_frets = int(max_frets)
 
-    def get_candidates(self, target_midi: int) -> list:
+    def get_candidates(self, target_midi: Optional[int]) -> list[FretPosition]:
         """
-        Verilen bir MIDI notasının bas gitar üzerinde çalınabileceği 
-        tüm (tel, perde) kombinasyonlarını bulur.
-        """
-        candidates = []
-        
-        # Es (Rest) notası geldiyse
-        if target_midi == -1:
-            return [{"string": "Rest", "fret": 0}]
+        Return every playable (string, fret) position for a MIDI note.
 
-        # Tüm telleri tek tek kontrol et
-        for string_num, base_midi in self.string_tunings.items():
-            fret = target_midi - base_midi
-            # Eğer nota bu telde çalınabiliyorsa (perde 0 ile max_frets arasındaysa)
-            if 0 <= fret <= self.max_frets:
-                candidates.append({
-                    "string": string_num,
-                    "fret": fret
-                })
-                
+        `None` is treated as a rest so downstream optimization can continue.
+        """
+        if target_midi is None:
+            return [FretPosition(string_number=None, fret=0)]
+
+        candidates: list[FretPosition] = []
+        for string_number, open_string_midi in self._string_tunings.items():
+            fret = int(target_midi) - open_string_midi
+            if 0 <= fret <= self._max_frets:
+                candidates.append(FretPosition(string_number=string_number, fret=fret))
+
+        if not candidates:
+            return [FretPosition(string_number=None, fret=0)]
+
         return candidates

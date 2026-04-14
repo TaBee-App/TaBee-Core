@@ -1,153 +1,122 @@
-﻿from typing import List
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import List, Optional, Tuple
 
 import librosa
 import numpy as np
 
 from ..domain.DetectedNote import DetectedNote
 from ..domain.DetectionResult import DetectionResult
+from ..ports.PitchEstimator import PitchEstimator
+from ..ports.PluckDetector import PluckDetector
+from .BassPluckDetector import BassPluckDetector, PluckDetectionConfig
+from .OnsetPitchEstimator import OnsetPitchEstimator, PitchConfig
+
+
+@dataclass(frozen=True)
+class TempoConfig:
+    """Configuration for tempo estimation from inter-onset intervals (IOI)."""
+
+    preferred_range_bpm: Tuple[float, float] = (60.0, 120.0)
+
+
+@dataclass(frozen=True)
+class PreprocessConfig:
+    """Configuration for basic audio preprocessing."""
+
+    trim_top_db: float = 30.0
+    normalize_eps: float = 1e-9
 
 
 class NoteDetectionPipeline:
+    """
+    Audio note detection pipeline:
+      - trims silence + normalizes
+      - detects bass pluck candidates
+      - estimates pitch (Hz) and confidence per pluck using librosa.pyin
+      - estimates tempo from onset spacing
+      - builds domain DetectedNote objects and DetectionResult
+    """
 
-    def detect(self, y, sr):
+    def __init__(
+        self,
+        *,
+        preprocess: Optional[PreprocessConfig] = None,
+        pluck: Optional[PluckDetectionConfig] = None,
+        pluck_detector: Optional[PluckDetector] = None,
+        pitch: Optional[PitchConfig] = None,
+        pitch_estimator: Optional[PitchEstimator] = None,
+        tempo: Optional[TempoConfig] = None,
+    ) -> None:
+        self._pre_cfg = preprocess or PreprocessConfig()
+        self._tempo_cfg = tempo or TempoConfig()
+        self._pluck_detector = pluck_detector or BassPluckDetector(
+            pluck or PluckDetectionConfig()
+        )
+        self._pitch_estimator = pitch_estimator or OnsetPitchEstimator(
+            pitch or PitchConfig()
+        )
+
+    def detect(self, y: np.ndarray, sr: int) -> DetectionResult:
         y = self._preprocess(y)
 
-        onset_times = self._detect_onsets(y, sr)
-        pitches = self._estimate_pitch_hz(y, sr, onset_times)  # <-- FIX
-        tempo = self._estimate_tempo_bpm(y, sr)
-        notes = self._build_notes(onset_times, pitches)
+        pluck_candidates = self._pluck_detector.detect(y, sr)
+        onset_times = [candidate.time_s for candidate in pluck_candidates]
+        pitches, confidences = self._pitch_estimator.estimate(
+            y, sr, pluck_candidates
+        )
+        tempo_bpm = self._estimate_tempo_bpm_from_onsets(onset_times)
+        notes = self._build_notes(onset_times, pitches, confidences)
 
         return DetectionResult(
-            tempo_bpm=tempo,
+            tempo_bpm=tempo_bpm,
             onset_times_s=onset_times,
             pitch_hz=pitches,
             notes=notes,
+            pluck_candidates=pluck_candidates,
         )
 
     def _preprocess(self, y: np.ndarray) -> np.ndarray:
-        # Trim silence
-        y, _ = librosa.effects.trim(y, top_db=30)
+        y = np.asarray(y)
+        if y.size == 0:
+            return y.astype(np.float32)
 
-        # Normalize safely
-        max_abs = np.max(np.abs(y)) if y.size else 0.0
-        if max_abs > 1e-9:
+        y, _ = librosa.effects.trim(y, top_db=self._pre_cfg.trim_top_db)
+
+        max_abs = float(np.max(np.abs(y))) if y.size else 0.0
+        if max_abs > self._pre_cfg.normalize_eps:
             y = y / max_abs
 
-        return y.astype(np.float32)
+        return y.astype(np.float32, copy=False)
 
-    def _detect_onsets(self, y: np.ndarray, sr: int) -> List[float]:
-        """
-        Uses librosa onset strength + peak picking.
-        """
-        onset_frames = librosa.onset.onset_detect(
-            y=y,
-            sr=sr,
-            units="frames",
-            backtrack=False,
-            pre_max=3,
-            post_max=3,
-            pre_avg=3,
-            post_avg=3,
-            delta=0.2,
-            wait=10,
-        )
-
-        onset_times = librosa.frames_to_time(onset_frames, sr=sr)
-        return onset_times.tolist()
-
-    def _estimate_pitch_hz(
-        self,
-        y: np.ndarray,
-        sr: int,
-        onset_times: List[float],
-    ) -> List[float]:
-        """
-        Pitch per onset using librosa.yin.
-        Strategy:
-          - Run YIN once
-          - Sample pitch around each onset
-        """
-        if not onset_times:
-            return []
-
-        # Run YIN over whole signal
-        f0 = librosa.yin(
-            y=y,
-            fmin=librosa.note_to_hz("E1"),
-            fmax=librosa.note_to_hz("C5"),
-            sr=sr,
-        )
-
-        times = librosa.times_like(f0, sr=sr)
-
-        pitches: List[float] = []
-
-        """
-        Yapılan değişiklik : Onset zamanından 20ms sonra başlayıp 50ms süren bir pencere açarak, 
-        bu pencere içindeki geçerli (pozitif) pitch değerlerinin medyanını alıyoruz. Eğer bu pencerede 
-        geçerli bir pitch yoksa, o zaman 0 Hz olarak kabul ediyoruz. Bu sayede, onset zamanında anlık 
-        bir pitch değeri yerine, onset sonrası kısa bir süre boyunca gözlemlenen pitch değerlerinin 
-        daha stabil bir temsilini elde ediyoruz. Bu yöntem, özellikle gürültülü sinyallerde veya hızlı 
-        geçişlerde daha güvenilir sonuçlar verebilir.
-        """
-        window_start_offset = 0.02  
-        window_duration = 0.05      
-
-        for onset_t in onset_times:
-            start_t = onset_t + window_start_offset
-            end_t = start_t + window_duration
-            
-            valid_indices = np.where((times >= start_t) & (times <= end_t))[0]
-            
-            if len(valid_indices) == 0:
-                idx = np.argmin(np.abs(times - onset_t))
-                valid_indices = [idx]
-                
-            window_pitches = f0[valid_indices]
-            valid_pitches = window_pitches[window_pitches > 0]
-            
-            if len(valid_pitches) > 0:
-                pitch = float(np.median(valid_pitches))
-            else:
-                pitch = 0.0
-                
-            pitches.append(pitch)
-
-        return pitches
-
-    def _estimate_tempo_bpm(self, y: np.ndarray, sr: int) -> int:
-        tempo = librosa.beat.tempo(y=y, sr=sr)
-        if tempo.size == 0:
+    def _estimate_tempo_bpm_from_onsets(self, onset_times: List[float]) -> int:
+        if len(onset_times) < 2:
             return 0
-        return int(round(float(tempo[0])))
+
+        ioi = np.diff(np.asarray(onset_times, dtype=float))
+        ioi = ioi[(ioi > 1e-3) & np.isfinite(ioi)]
+        if ioi.size == 0:
+            return 0
+
+        base = float(np.median(ioi))
+        bpm = 60.0 / base
+
+        lo, hi = self._tempo_cfg.preferred_range_bpm
+        while bpm > hi:
+            bpm /= 2.0
+        while bpm < lo:
+            bpm *= 2.0
+
+        return int(round(bpm))
 
     def _build_notes(
         self,
         onset_times: List[float],
         pitches: List[float],
+        confidences: List[float],
     ) -> List[DetectedNote]:
-
-        notes: List[DetectedNote] = []
-
-        for i, (t, f) in enumerate(zip(onset_times, pitches)):
-            confidence = self._estimate_confidence(f)
-            notes.append(
-                DetectedNote(
-                    time_s=t,
-                    frequency_hz=f,
-                    confidence=confidence,
-                )
-            )
-
-        return notes
-
-
-    def _estimate_confidence(self, frequency_hz: float) -> float:
-        """
-        Very naive confidence:
-          - 0 if no pitch
-          - 0.7–1.0 otherwise
-        """
-        if frequency_hz <= 0:
-            return 0.0
-        return 0.8
+        return [
+            DetectedNote(time_s=float(t), frequency_hz=float(f), confidence=float(c))
+            for t, f, c in zip(onset_times, pitches, confidences)
+        ]

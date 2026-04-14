@@ -1,73 +1,89 @@
-class PlayabilityOptimizer:
-    def __init__(self):
-        # Maliyet ağırlıkları (Projenin ileriki aşamalarında bu katsayılarla oynayarak optimizasyonu hassaslaştırabiliriz)
-        self.weight_fret = 1.0    # Perdeler arası el kaydırma maliyeti
-        self.weight_string = 1.5  # Teller arası parmak atlama maliyeti
+from __future__ import annotations
 
-    def calculate_cost(self, prev_pos: dict, curr_pos: dict) -> float:
+from typing import Sequence
+
+from ..domain.FretPosition import FretPosition
+from ..ports.TabOptimizer import TabOptimizer
+
+
+class PlayabilityOptimizer(TabOptimizer):
+    def __init__(self, weight_fret: float = 1.0, weight_string: float = 1.5):
+        self._weight_fret = float(weight_fret)
+        self._weight_string = float(weight_string)
+
+    def calculate_cost(
+        self,
+        previous_position: FretPosition,
+        current_position: FretPosition,
+    ) -> float:
         """
-        Bir önceki (Tel, Perde) konumundan, yeni konuma geçişin zorluğunu hesaplar.
+        Estimate physical movement cost between two fretboard positions.
+
+        Open strings reduce hand-shift cost because the fretting hand can reset.
+        Rests are treated as free transitions.
         """
-        # Eğer Rest (Es) notasıysa maliyet sıfırdır, el serbesttir.
-        if prev_pos.get('string') == 'Rest' or curr_pos.get('string') == 'Rest':
+        if previous_position.is_rest or current_position.is_rest:
             return 0.0
 
-        # Boş teller (Fret 0) geçişleri kolaylaştırır çünkü eli klavyede kaydırmak için zaman kazandırır.
-        if prev_pos['fret'] == 0 or curr_pos['fret'] == 0:
-            fret_diff = 0
+        if previous_position.fret == 0 or current_position.fret == 0:
+            fret_distance = 0
         else:
-            fret_diff = abs(prev_pos['fret'] - curr_pos['fret'])
-        
-        string_diff = abs(prev_pos['string'] - curr_pos['string'])
-        
-        return (fret_diff * self.weight_fret) + (string_diff * self.weight_string)
+            fret_distance = abs(previous_position.fret - current_position.fret)
 
-    def optimize(self, candidates_sequence: list) -> list:
-        """
-        Viterbi algoritması kullanarak şarkı başından sonuna kadar
-        en düşük maliyetli (en kolay çalınabilir) rotayı bulur.
-        """
-        if not candidates_sequence:
+        string_distance = abs(
+            int(previous_position.string_number) - int(current_position.string_number)
+        )
+
+        return (
+            (fret_distance * self._weight_fret)
+            + (string_distance * self._weight_string)
+        )
+
+    def optimize(
+        self,
+        candidate_sequence: Sequence[Sequence[FretPosition]],
+    ) -> list[FretPosition]:
+        if not candidate_sequence:
             return []
 
-        # DP (Dinamik Programlama) Tablosu
-        # dp[nota_index][aday_index] = (O_ana_kadarki_toplam_maliyet, Bir_onceki_en_iyi_adayin_indexi)
-        dp = [{i: (0, None) for i in range(len(candidates_sequence[0]))}]
+        dp: list[dict[int, tuple[float, int | None]]] = [
+            {index: (0.0, None) for index in range(len(candidate_sequence[0]))}
+        ]
 
-        # 1. İleriye Doğru Tarama (Tüm rotaların maliyetini hesapla)
-        for i in range(1, len(candidates_sequence)):
-            current_candidates = candidates_sequence[i]
-            prev_candidates = candidates_sequence[i-1]
-            current_dp = {}
-            
-            for curr_idx, curr_cand in enumerate(current_candidates):
-                min_cost = float('inf')
-                best_prev_idx = None
-                
-                for prev_idx, prev_cand in enumerate(prev_candidates):
-                    prev_cost = dp[i-1][prev_idx][0]
-                    transition_cost = self.calculate_cost(prev_cand, curr_cand)
-                    total_cost = prev_cost + transition_cost
-                    
+        for note_index in range(1, len(candidate_sequence)):
+            current_candidates = candidate_sequence[note_index]
+            previous_candidates = candidate_sequence[note_index - 1]
+            current_dp: dict[int, tuple[float, int | None]] = {}
+
+            for current_index, current_candidate in enumerate(current_candidates):
+                min_cost = float("inf")
+                best_previous_index: int | None = None
+
+                for previous_index, previous_candidate in enumerate(previous_candidates):
+                    previous_cost = dp[note_index - 1][previous_index][0]
+                    transition_cost = self.calculate_cost(
+                        previous_candidate,
+                        current_candidate,
+                    )
+                    total_cost = previous_cost + transition_cost
+
                     if total_cost < min_cost:
                         min_cost = total_cost
-                        best_prev_idx = prev_idx
-                        
-                current_dp[curr_idx] = (min_cost, best_prev_idx)
+                        best_previous_index = previous_index
+
+                current_dp[current_index] = (min_cost, best_previous_index)
+
             dp.append(current_dp)
 
-        # 2. Geriye Doğru Takip (En ucuz rotayı sondan başa doğru topla)
-        optimal_path = []
-        last_dp = dp[-1]
-        
-        # Son notadaki en düşük maliyetli adayı bul
-        curr_idx = min(last_dp.keys(), key=lambda k: last_dp[k][0])
-        
-        # Zinciri geriye doğru sararak en iyi yolu çıkart
-        for i in range(len(candidates_sequence) - 1, -1, -1):
-            optimal_path.append(candidates_sequence[i][curr_idx])
-            curr_idx = dp[i][curr_idx][1] # Bir önceki adımdaki en iyi adaya geç
-            
-        # Listeyi baştan sona doğru olacak şekilde tersine çevir
+        optimal_path: list[FretPosition] = []
+        current_index = min(dp[-1].keys(), key=lambda idx: dp[-1][idx][0])
+
+        for note_index in range(len(candidate_sequence) - 1, -1, -1):
+            optimal_path.append(candidate_sequence[note_index][current_index])
+            previous_index = dp[note_index][current_index][1]
+            if previous_index is None:
+                break
+            current_index = previous_index
+
         optimal_path.reverse()
         return optimal_path
