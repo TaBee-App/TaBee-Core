@@ -1,5 +1,12 @@
+import sys
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 from noteDetection import LibrosaAudioReader, NoteDetectionPipeline, NoteDetectionService
-from tabGeneration import TabGenerationService
+from tabGeneration import TabGenerationService, TabRenderer
 
 
 if __name__ == "__main__":
@@ -8,6 +15,7 @@ if __name__ == "__main__":
         pipeline=NoteDetectionPipeline(),
     )
     tab_service = TabGenerationService()
+    renderer = TabRenderer()
 
     result = service.analyze_file("queen.wav")
     assignments = tab_service.generate_from_detection_result(result)
@@ -29,3 +37,6 @@ if __name__ == "__main__":
             f"{assignment.position.fret:4d}   "
             f"{assignment.confidence:4.2f}"
         )
+
+    print()
+    print(renderer.render_ascii(assignments[:64]))

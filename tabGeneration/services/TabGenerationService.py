@@ -27,8 +27,9 @@ class TabGenerationService:
         fretboard: Optional[Fretboard] = None,
         optimizer: Optional[TabOptimizer] = None,
         bass_octave_threshold_midi: int = 45,
+        tuning: str = "EADG",
     ) -> None:
-        self._fretboard = fretboard or BassFretboard()
+        self._fretboard = fretboard or BassFretboard(tuning=tuning)
         self._optimizer = optimizer or PlayabilityOptimizer()
         self._bass_octave_threshold_midi = int(bass_octave_threshold_midi)
 

@@ -62,8 +62,8 @@ public class AudioFileController {
     }
 
     @PostMapping("/{id}/process")
-    public AudioProcessingResponse process(@PathVariable Long id) {
-        return audioFileService.requestProcessing(id);
+    public AudioProcessingResponse process(@AuthenticationPrincipal User currentUser, @PathVariable Long id) {
+        return audioFileService.requestProcessing(this.currentUser.require(currentUser), id);
     }
 
     @DeleteMapping("/{id}")

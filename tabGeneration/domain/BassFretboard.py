@@ -17,14 +17,38 @@ class BassFretboard(Fretboard):
     4 -> E1 (MIDI 28)
     """
 
-    def __init__(self, max_frets: int = 24):
-        self._string_tunings = {
+    _TUNINGS = {
+        "EADG": {
             1: 43,  # G2
             2: 38,  # D2
             3: 33,  # A1
             4: 28,  # E1
-        }
+        },
+        "BEADG": {
+            1: 43,  # G2
+            2: 38,  # D2
+            3: 33,  # A1
+            4: 28,  # E1
+            5: 23,  # B0
+        },
+    }
+
+    def __init__(self, max_frets: int = 24, tuning: str = "EADG"):
+        tuning_key = tuning.upper()
+        if tuning_key not in self._TUNINGS:
+            supported = ", ".join(sorted(self._TUNINGS))
+            raise ValueError(f"Unsupported bass tuning '{tuning}'. Supported tunings: {supported}")
+        self._tuning = tuning_key
+        self._string_tunings = dict(self._TUNINGS[tuning_key])
         self._max_frets = int(max_frets)
+
+    @property
+    def tuning(self) -> str:
+        return self._tuning
+
+    @property
+    def string_numbers(self) -> list[int]:
+        return sorted(self._string_tunings)
 
     def get_candidates(self, target_midi: Optional[int]) -> list[FretPosition]:
         """

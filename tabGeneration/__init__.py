@@ -1,7 +1,7 @@
 from .domain import BassFretboard, FretPosition, TabNoteAssignment
 from .ports.Fretboard import Fretboard
 from .ports.TabOptimizer import TabOptimizer
-from .services import PlayabilityOptimizer, TabGenerationService
+from .services import PlayabilityOptimizer, TabGenerationService, TabRenderer
 
 __all__ = [
     "Fretboard",
@@ -11,4 +11,5 @@ __all__ = [
     "TabNoteAssignment",
     "PlayabilityOptimizer",
     "TabGenerationService",
+    "TabRenderer",
 ]

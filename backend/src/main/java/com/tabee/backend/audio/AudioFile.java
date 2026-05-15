@@ -1,6 +1,7 @@
 package com.tabee.backend.audio;
 
 import java.math.BigDecimal;
+import java.nio.file.Path;
 import java.time.OffsetDateTime;
 
 import com.tabee.backend.user.User;
@@ -74,6 +75,10 @@ public class AudioFile {
 
     public String getStoredFilename() {
         return storedFilename;
+    }
+
+    public Path resolveStoredPath(Path uploadDir) {
+        return uploadDir.resolve(storedFilename);
     }
 
     public void setStoredFilename(String storedFilename) {

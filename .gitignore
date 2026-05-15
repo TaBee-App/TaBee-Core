@@ -78,6 +78,9 @@ data/
 # =========================
 .env
 .env.*
+!.env.example
+!backend/.env.example
+backend/uploads/
 
 # =========================
 # Misc
@@ -85,3 +88,5 @@ data/
 *.tmp
 *.bak
 *.swp
+*.tab.json
+*.tab.txt

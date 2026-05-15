@@ -49,7 +49,8 @@ public final class AudioDtos {
     public record AudioProcessingResponse(
             Long audioFileId,
             String status,
-            String message
+            String message,
+            Long tabId
     ) {
     }
 

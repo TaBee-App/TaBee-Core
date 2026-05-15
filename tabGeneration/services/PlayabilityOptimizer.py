@@ -7,9 +7,36 @@ from ..ports.TabOptimizer import TabOptimizer
 
 
 class PlayabilityOptimizer(TabOptimizer):
-    def __init__(self, weight_fret: float = 1.0, weight_string: float = 1.5):
+    """
+    Viterbi-style dynamic-programming optimizer.
+
+    Each detected pitch may have several valid bass fretboard positions. We choose
+    the path with minimum total playability cost: local position preference plus
+    transition movement cost between consecutive notes.
+    """
+
+    def __init__(
+        self,
+        weight_fret: float = 1.0,
+        weight_string: float = 1.5,
+        weight_open_string: float = 0.7,
+        weight_high_fret: float = 0.08,
+        weight_position_shift: float = 0.35,
+    ):
         self._weight_fret = float(weight_fret)
         self._weight_string = float(weight_string)
+        self._weight_open_string = float(weight_open_string)
+        self._weight_high_fret = float(weight_high_fret)
+        self._weight_position_shift = float(weight_position_shift)
+
+    def local_cost(self, position: FretPosition) -> float:
+        if position.is_rest:
+            return 0.0
+
+        cost = float(position.fret) * self._weight_high_fret
+        if position.fret == 0:
+            cost += self._weight_open_string
+        return cost
 
     def calculate_cost(
         self,
@@ -37,7 +64,20 @@ class PlayabilityOptimizer(TabOptimizer):
         return (
             (fret_distance * self._weight_fret)
             + (string_distance * self._weight_string)
+            + (self._hand_position_shift(previous_position, current_position) * self._weight_position_shift)
         )
+
+    def _hand_position_shift(
+        self,
+        previous_position: FretPosition,
+        current_position: FretPosition,
+    ) -> int:
+        if previous_position.fret == 0 or current_position.fret == 0:
+            return 0
+        return abs(self._hand_position(previous_position.fret) - self._hand_position(current_position.fret))
+
+    def _hand_position(self, fret: int) -> int:
+        return max(1, ((int(fret) - 1) // 4) + 1)
 
     def optimize(
         self,
@@ -47,7 +87,10 @@ class PlayabilityOptimizer(TabOptimizer):
             return []
 
         dp: list[dict[int, tuple[float, int | None]]] = [
-            {index: (0.0, None) for index in range(len(candidate_sequence[0]))}
+            {
+                index: (self.local_cost(candidate), None)
+                for index, candidate in enumerate(candidate_sequence[0])
+            }
         ]
 
         for note_index in range(1, len(candidate_sequence)):
@@ -66,6 +109,7 @@ class PlayabilityOptimizer(TabOptimizer):
                         current_candidate,
                     )
                     total_cost = previous_cost + transition_cost
+                    total_cost += self.local_cost(current_candidate)
 
                     if total_cost < min_cost:
                         min_cost = total_cost

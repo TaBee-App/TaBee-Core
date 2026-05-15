@@ -8,7 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.tabee.backend.audio.AudioFile;
-import com.tabee.backend.audio.AudioFileService;
+import com.tabee.backend.audio.AudioFileRepository;
 import com.tabee.backend.tab.TabDtos.NoteEventRequest;
 import com.tabee.backend.tab.TabDtos.TabRequest;
 import com.tabee.backend.tab.TabDtos.TabUpdateRequest;
@@ -17,11 +17,11 @@ import com.tabee.backend.user.User;
 @Service
 public class TabService {
     private final TabRepository tabRepository;
-    private final AudioFileService audioFileService;
+    private final AudioFileRepository audioFileRepository;
 
-    public TabService(TabRepository tabRepository, AudioFileService audioFileService) {
+    public TabService(TabRepository tabRepository, AudioFileRepository audioFileRepository) {
         this.tabRepository = tabRepository;
-        this.audioFileService = audioFileService;
+        this.audioFileRepository = audioFileRepository;
     }
 
     @Transactional(readOnly = true)
@@ -37,7 +37,8 @@ public class TabService {
 
     @Transactional
     public Tab create(User owner, TabRequest request) {
-        AudioFile audioFile = audioFileService.findById(request.sourceAudioId());
+        AudioFile audioFile = audioFileRepository.findById(request.sourceAudioId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Audio file not found"));
         if (!audioFile.getOwner().getId().equals(owner.getId())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Audio file does not belong to current user");
         }

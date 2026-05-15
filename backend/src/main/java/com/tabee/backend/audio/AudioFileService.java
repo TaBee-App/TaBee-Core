@@ -14,6 +14,8 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.tabee.backend.audio.AudioDtos.AudioProcessingResponse;
+import com.tabee.backend.tab.Tab;
+import com.tabee.backend.tab.TabProcessingService;
 import com.tabee.backend.user.User;
 import com.tabee.backend.user.UserService;
 
@@ -21,16 +23,16 @@ import com.tabee.backend.user.UserService;
 public class AudioFileService {
     private final AudioFileRepository audioFileRepository;
     private final UserService userService;
-    private final AudioProcessingClient audioProcessingClient;
+    private final TabProcessingService tabProcessingService;
     private final Path uploadDir;
 
     public AudioFileService(AudioFileRepository audioFileRepository,
                             UserService userService,
-                            AudioProcessingClient audioProcessingClient,
+                            TabProcessingService tabProcessingService,
                             @Value("${tabee.upload-dir:uploads}") String uploadDir) {
         this.audioFileRepository = audioFileRepository;
         this.userService = userService;
-        this.audioProcessingClient = audioProcessingClient;
+        this.tabProcessingService = tabProcessingService;
         this.uploadDir = Path.of(uploadDir);
     }
 
@@ -71,18 +73,28 @@ public class AudioFileService {
     }
 
     @Transactional
-    public AudioProcessingResponse requestProcessing(Long audioFileId) {
+    public AudioProcessingResponse requestProcessing(User owner, Long audioFileId) {
         AudioFile audioFile = findById(audioFileId);
+        if (!audioFile.getOwner().getId().equals(owner.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Audio file does not belong to current user");
+        }
         audioFile.setProcessingStatus(ProcessingStatus.PROCESSING);
         audioFileRepository.save(audioFile);
 
         try {
-            String message = audioProcessingClient.requestProcessing(audioFile);
-            return new AudioProcessingResponse(audioFile.getId(), audioFile.getProcessingStatus().name(), message);
+            Tab tab = tabProcessingService.generateTabFromAudio(owner, audioFile, uploadDir);
+            audioFile.setProcessingStatus(ProcessingStatus.COMPLETED);
+            audioFileRepository.save(audioFile);
+            return new AudioProcessingResponse(
+                    audioFile.getId(),
+                    audioFile.getProcessingStatus().name(),
+                    "Tab generated successfully",
+                    tab.getId()
+            );
         } catch (RuntimeException e) {
             audioFile.setProcessingStatus(ProcessingStatus.FAILED);
             audioFileRepository.save(audioFile);
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Audio processing service failed", e);
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Audio-to-tab processing failed: " + e.getMessage(), e);
         }
     }
 
