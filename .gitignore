@@ -15,6 +15,7 @@ env/
 # Packaging / build
 build/
 dist/
+target/
 *.egg-info/
 
 # =========================
@@ -43,6 +44,7 @@ Thumbs.db
 # =========================
 *.log
 logs/
+backend.pid
 
 # =========================
 # Test / coverage
