@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.tabee.backend.audio.AudioDtos.AudioFileResponse;
 import com.tabee.backend.audio.AudioDtos.AudioUploadRequest;
-import com.tabee.backend.audio.AudioDtos.AudioProcessingResponse;
+import com.tabee.backend.audio.AudioDtos.AudioUploadAndProcessResponse;
 import com.tabee.backend.security.CurrentUser;
 import com.tabee.backend.user.User;
 
@@ -44,31 +44,33 @@ public class AudioFileController {
     }
 
     @GetMapping("/{id}")
-    public AudioFileResponse findById(@PathVariable Long id) {
-        return AudioFileResponse.from(audioFileService.findById(id));
+    public AudioFileResponse findById(@AuthenticationPrincipal User currentUser, @PathVariable Long id) {
+        AudioFileResponse response = AudioFileResponse.from(audioFileService.findById(id));
+        if (!response.ownerUserId().equals(this.currentUser.require(currentUser).getId())) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN,
+                    "Audio file does not belong to current user"
+            );
+        }
+        return response;
     }
 
-    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/upload-and-process", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "Upload an audio file for the authenticated user")
+    @Operation(summary = "Upload an audio file and immediately generate a tab")
     @RequestBody(content = @Content(
             mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
             schema = @Schema(implementation = AudioUploadRequest.class)
     ))
-    public AudioFileResponse upload(
+    public AudioUploadAndProcessResponse uploadAndProcess(
             @AuthenticationPrincipal User currentUser,
             @ModelAttribute AudioUploadRequest request) {
-        return AudioFileResponse.from(audioFileService.upload(this.currentUser.require(currentUser), request.getFile()));
-    }
-
-    @PostMapping("/{id}/process")
-    public AudioProcessingResponse process(@AuthenticationPrincipal User currentUser, @PathVariable Long id) {
-        return audioFileService.requestProcessing(this.currentUser.require(currentUser), id);
+        return audioFileService.uploadAndProcess(this.currentUser.require(currentUser), request.getFile());
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Long id) {
-        audioFileService.delete(id);
+    public void delete(@AuthenticationPrincipal User currentUser, @PathVariable Long id) {
+        audioFileService.delete(this.currentUser.require(currentUser), id);
     }
 }

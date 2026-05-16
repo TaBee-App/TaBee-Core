@@ -13,11 +13,11 @@ notepad .env
 .\run-local.ps1
 ```
 
-The backend can generate tabs by calling the local Python DSP pipeline:
+The backend generates tabs while uploading audio by calling the local Python DSP pipeline:
 
 ```text
-POST /api/audio-files/{audioFileId}/process
+POST /api/audio-files/upload-and-process
 ```
 
-This creates a `tabs` row, a `tab_data` row, and `note_events` rows. The response
-contains the generated `tabId`.
+This creates an `audiofiles` row, a `tabs` row, a `tab_data` row, and `note_events`
+rows in one frontend-facing flow. The response contains the generated `tabId`.

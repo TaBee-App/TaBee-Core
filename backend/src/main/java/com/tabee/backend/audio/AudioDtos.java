@@ -3,7 +3,6 @@ package com.tabee.backend.audio;
 import java.time.OffsetDateTime;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotNull;
 import org.springframework.web.multipart.MultipartFile;
 
 public final class AudioDtos {
@@ -41,14 +40,16 @@ public final class AudioDtos {
         }
     }
 
-    public record ProcessAudioRequest(
-            @NotNull Long audioFileId
-    ) {
-    }
-
     public record AudioProcessingResponse(
             Long audioFileId,
             String status,
+            String message,
+            Long tabId
+    ) {
+    }
+
+    public record AudioUploadAndProcessResponse(
+            AudioFileResponse audioFile,
             String message,
             Long tabId
     ) {

@@ -2,6 +2,8 @@ package com.tabee.backend.playlist;
 
 import java.util.List;
 
+import jakarta.persistence.EntityManager;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,13 +19,16 @@ public class PlaylistService {
     private final UserPlaylistRepository playlistRepository;
     private final PlaylistTabRepository playlistTabRepository;
     private final TabService tabService;
+    private final EntityManager entityManager;
 
     public PlaylistService(UserPlaylistRepository playlistRepository,
                            PlaylistTabRepository playlistTabRepository,
-                           TabService tabService) {
+                           TabService tabService,
+                           EntityManager entityManager) {
         this.playlistRepository = playlistRepository;
         this.playlistTabRepository = playlistTabRepository;
         this.tabService = tabService;
+        this.entityManager = entityManager;
     }
 
     @Transactional(readOnly = true)
@@ -63,29 +68,24 @@ public class PlaylistService {
 
     @Transactional
     public UserPlaylist addTab(User owner, Long playlistId, Long tabId) {
-        UserPlaylist playlist = findById(owner, playlistId);
+        findById(owner, playlistId);
         Tab tab = tabService.findById(tabId);
-        if (!tab.getOwner().getId().equals(owner.getId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Tab does not belong to current user");
-        }
 
-        PlaylistTabId id = new PlaylistTabId(playlist.getId(), tab.getId());
-        if (playlistTabRepository.existsById(id)) {
-            return findById(owner, playlistId);
-        }
-
-        PlaylistTab playlistTab = new PlaylistTab();
-        playlistTab.setId(id);
-        playlistTab.setPlaylist(playlist);
-        playlistTab.setTab(tab);
-        playlistTabRepository.save(playlistTab);
+        playlistTabRepository.insertIgnoreConflict(playlistId, tab.getId());
+        entityManager.flush();
+        entityManager.clear();
         return findById(owner, playlistId);
     }
 
     @Transactional
     public UserPlaylist removeTab(User owner, Long playlistId, Long tabId) {
         findById(owner, playlistId);
-        playlistTabRepository.deleteById(new PlaylistTabId(playlistId, tabId));
+        int deleted = playlistTabRepository.deleteByPlaylistIdAndTabId(playlistId, tabId);
+        if (deleted == 0) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Tab is not in this playlist");
+        }
+        entityManager.flush();
+        entityManager.clear();
         return findById(owner, playlistId);
     }
 

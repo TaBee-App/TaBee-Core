@@ -14,6 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.tabee.backend.audio.AudioDtos.AudioProcessingResponse;
+import com.tabee.backend.audio.AudioDtos.AudioUploadAndProcessResponse;
 import com.tabee.backend.tab.Tab;
 import com.tabee.backend.tab.TabProcessingService;
 import com.tabee.backend.user.User;
@@ -73,6 +74,18 @@ public class AudioFileService {
     }
 
     @Transactional
+    public AudioUploadAndProcessResponse uploadAndProcess(User owner, MultipartFile file) {
+        AudioFile audioFile = upload(owner, file);
+        AudioProcessingResponse processing = requestProcessing(owner, audioFile.getId());
+        AudioFile refreshedAudioFile = findById(audioFile.getId());
+        return new AudioUploadAndProcessResponse(
+                AudioDtos.AudioFileResponse.from(refreshedAudioFile),
+                processing.message(),
+                processing.tabId()
+        );
+    }
+
+    @Transactional
     public AudioProcessingResponse requestProcessing(User owner, Long audioFileId) {
         AudioFile audioFile = findById(audioFileId);
         if (!audioFile.getOwner().getId().equals(owner.getId())) {
@@ -101,5 +114,14 @@ public class AudioFileService {
     @Transactional
     public void delete(Long id) {
         audioFileRepository.delete(findById(id));
+    }
+
+    @Transactional
+    public void delete(User owner, Long id) {
+        AudioFile audioFile = findById(id);
+        if (!audioFile.getOwner().getId().equals(owner.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Audio file does not belong to current user");
+        }
+        audioFileRepository.delete(audioFile);
     }
 }
