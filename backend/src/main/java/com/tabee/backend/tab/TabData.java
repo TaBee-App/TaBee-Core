@@ -1,17 +1,18 @@
 package com.tabee.backend.tab;
 
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
-import jakarta.persistence.CascadeType;
+import com.fasterxml.jackson.databind.JsonNode;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "tab_data")
@@ -28,11 +29,12 @@ public class TabData {
     @Column(name = "estimated_tempo")
     private Integer estimatedTempo;
 
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "json_data", columnDefinition = "jsonb")
+    private JsonNode jsonData;
+
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt = OffsetDateTime.now();
-
-    @OneToMany(mappedBy = "parentTabData", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<NoteEvent> noteEvents = new ArrayList<>();
 
     public Long getId() {
         return id;
@@ -54,22 +56,15 @@ public class TabData {
         this.estimatedTempo = estimatedTempo;
     }
 
+    public JsonNode getJsonData() {
+        return jsonData;
+    }
+
+    public void setJsonData(JsonNode jsonData) {
+        this.jsonData = jsonData;
+    }
+
     public OffsetDateTime getCreatedAt() {
         return createdAt;
-    }
-
-    public List<NoteEvent> getNoteEvents() {
-        return noteEvents;
-    }
-
-    public void replaceNoteEvents(List<NoteEvent> newNoteEvents) {
-        noteEvents.clear();
-        if (newNoteEvents == null) {
-            return;
-        }
-        for (NoteEvent noteEvent : newNoteEvents) {
-            noteEvent.setParentTabData(this);
-            noteEvents.add(noteEvent);
-        }
     }
 }

@@ -7,9 +7,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.tabee.backend.audio.AudioFile;
-import com.tabee.backend.audio.AudioFileRepository;
-import com.tabee.backend.tab.TabDtos.NoteEventRequest;
 import com.tabee.backend.tab.TabDtos.TabRequest;
 import com.tabee.backend.tab.TabDtos.TabUpdateRequest;
 import com.tabee.backend.user.User;
@@ -17,11 +14,9 @@ import com.tabee.backend.user.User;
 @Service
 public class TabService {
     private final TabRepository tabRepository;
-    private final AudioFileRepository audioFileRepository;
 
-    public TabService(TabRepository tabRepository, AudioFileRepository audioFileRepository) {
+    public TabService(TabRepository tabRepository) {
         this.tabRepository = tabRepository;
-        this.audioFileRepository = audioFileRepository;
     }
 
     @Transactional(readOnly = true)
@@ -37,20 +32,13 @@ public class TabService {
 
     @Transactional
     public Tab create(User owner, TabRequest request) {
-        AudioFile audioFile = audioFileRepository.findById(request.sourceAudioId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Audio file not found"));
-        if (!audioFile.getOwner().getId().equals(owner.getId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Audio file does not belong to current user");
-        }
-
         TabData tabData = new TabData();
         tabData.setTuning(request.tuning());
         tabData.setEstimatedTempo(request.estimatedTempo());
-        tabData.replaceNoteEvents(toNoteEvents(request.notes()));
+        tabData.setJsonData(request.jsonData());
 
         Tab tab = new Tab();
         tab.setOwner(owner);
-        tab.setSourceAudio(audioFile);
         tab.setTabData(tabData);
         tab.setTitle(request.title());
         tab.setArtist(request.artist());
@@ -74,8 +62,8 @@ public class TabService {
         if (request.estimatedTempo() != null) {
             tab.getTabData().setEstimatedTempo(request.estimatedTempo());
         }
-        if (request.notes() != null) {
-            tab.getTabData().replaceNoteEvents(toNoteEvents(request.notes()));
+        if (request.jsonData() != null) {
+            tab.getTabData().setJsonData(request.jsonData());
         }
 
         return tabRepository.save(tab);
@@ -97,23 +85,5 @@ public class TabService {
         if (!tab.getOwner().getId().equals(owner.getId())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Tab does not belong to current user");
         }
-    }
-
-    private List<NoteEvent> toNoteEvents(List<NoteEventRequest> requests) {
-        if (requests == null) {
-            return List.of();
-        }
-
-        return requests.stream().map(request -> {
-            NoteEvent noteEvent = new NoteEvent();
-            noteEvent.setTime(request.time());
-            noteEvent.setFrequency(request.frequency());
-            noteEvent.setConfidence(request.confidence());
-            noteEvent.setNoteName(request.noteName());
-            noteEvent.setMidiNumber(request.midiNumber());
-            noteEvent.setFret(request.fret());
-            noteEvent.setStringNumber(request.stringNumber());
-            return noteEvent;
-        }).toList();
     }
 }

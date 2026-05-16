@@ -2,7 +2,6 @@ package com.tabee.backend.tab;
 
 import java.time.OffsetDateTime;
 
-import com.tabee.backend.audio.AudioFile;
 import com.tabee.backend.user.User;
 
 import jakarta.persistence.CascadeType;
@@ -30,10 +29,6 @@ public class Tab {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "owner_user_id", nullable = false)
     private User owner;
-
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "source_audio_id", nullable = false)
-    private AudioFile sourceAudio;
 
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true, optional = false)
     @JoinColumn(name = "tab_data_id", nullable = false)
@@ -65,14 +60,6 @@ public class Tab {
 
     public void setOwner(User owner) {
         this.owner = owner;
-    }
-
-    public AudioFile getSourceAudio() {
-        return sourceAudio;
-    }
-
-    public void setSourceAudio(AudioFile sourceAudio) {
-        this.sourceAudio = sourceAudio;
     }
 
     public TabData getTabData() {

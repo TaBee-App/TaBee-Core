@@ -23,10 +23,8 @@ public class DatabaseDebugController {
                 "schema", queryForString("SELECT current_schema()"),
                 "user", queryForString("SELECT current_user"),
                 "usersCount", count("users"),
-                "audiofilesCount", count("audiofiles"),
                 "tabsCount", count("tabs"),
-                "tabDataCount", count("tab_data"),
-                "noteEventsCount", count("note_events")
+                "tabDataCount", count("tab_data")
         );
     }
 
