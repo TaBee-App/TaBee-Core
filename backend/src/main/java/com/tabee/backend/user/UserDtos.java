@@ -45,4 +45,27 @@ public final class UserDtos {
             );
         }
     }
+
+    public record PublicUserResponse(
+            Long id,
+            String username,
+            String fullName,
+            OffsetDateTime createdAt,
+            boolean followedByCurrentUser,
+            long followerCount,
+            long followingCount
+    ) {
+        public static PublicUserResponse from(User user, boolean followedByCurrentUser,
+                                              long followerCount, long followingCount) {
+            return new PublicUserResponse(
+                    user.getId(),
+                    user.getUsername(),
+                    user.getFullName(),
+                    user.getCreatedAt(),
+                    followedByCurrentUser,
+                    followerCount,
+                    followingCount
+            );
+        }
+    }
 }

@@ -24,6 +24,7 @@ public final class PlaylistDtos {
 
     public record PlaylistTabResponse(
             Long tabId,
+            Long ownerUserId,
             String title,
             String artist,
             OffsetDateTime addedAt
@@ -31,6 +32,7 @@ public final class PlaylistDtos {
         public static PlaylistTabResponse from(PlaylistTab playlistTab) {
             return new PlaylistTabResponse(
                     playlistTab.getTab().getId(),
+                    playlistTab.getTab().getOwner().getId(),
                     playlistTab.getTab().getTitle(),
                     playlistTab.getTab().getArtist(),
                     playlistTab.getAddedAt()
@@ -41,18 +43,29 @@ public final class PlaylistDtos {
     public record PlaylistResponse(
             Long id,
             Long ownerUserId,
+            String ownerUsername,
             String name,
             String description,
             OffsetDateTime createdAt,
+            boolean createdByCurrentUser,
+            boolean savedByCurrentUser,
             List<PlaylistTabResponse> tabs
     ) {
         public static PlaylistResponse from(UserPlaylist playlist) {
+            return from(playlist, null, false);
+        }
+
+        public static PlaylistResponse from(UserPlaylist playlist, Long currentUserId, boolean savedByCurrentUser) {
+            boolean createdByCurrentUser = currentUserId != null && playlist.getOwner().getId().equals(currentUserId);
             return new PlaylistResponse(
                     playlist.getId(),
                     playlist.getOwner().getId(),
+                    playlist.getOwner().getUsername(),
                     playlist.getName(),
                     playlist.getDescription(),
                     playlist.getCreatedAt(),
+                    createdByCurrentUser,
+                    savedByCurrentUser,
                     playlist.getPlaylistTabs().stream().map(PlaylistTabResponse::from).toList()
             );
         }

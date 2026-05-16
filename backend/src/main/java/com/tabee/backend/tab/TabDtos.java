@@ -33,6 +33,7 @@ public final class TabDtos {
     public record TabResponse(
             Long id,
             Long ownerUserId,
+            String ownerUsername,
             Long tabDataId,
             String title,
             String artist,
@@ -46,6 +47,7 @@ public final class TabDtos {
             return new TabResponse(
                     tab.getId(),
                     tab.getOwner().getId(),
+                    tab.getOwner().getUsername(),
                     tab.getTabData().getId(),
                     tab.getTitle(),
                     tab.getArtist(),

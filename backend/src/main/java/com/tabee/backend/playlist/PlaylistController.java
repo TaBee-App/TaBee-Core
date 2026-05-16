@@ -35,24 +35,54 @@ public class PlaylistController {
 
     @GetMapping
     public List<PlaylistResponse> findMine(@AuthenticationPrincipal User user) {
-        return playlistService.findMine(currentUser.require(user)).stream().map(PlaylistResponse::from).toList();
+        User current = currentUser.require(user);
+        return playlistService.findMine(current).stream()
+                .map(playlist -> PlaylistResponse.from(playlist, current.getId(), false))
+                .toList();
+    }
+
+    @GetMapping("/archive")
+    public List<PlaylistResponse> findArchive(@AuthenticationPrincipal User user) {
+        User current = currentUser.require(user);
+        return playlistService.findArchive().stream()
+                .map(playlist -> PlaylistResponse.from(
+                        playlist,
+                        current.getId(),
+                        playlistService.isSavedBy(current, playlist.getId())
+                ))
+                .toList();
+    }
+
+    @GetMapping("/saved")
+    public List<PlaylistResponse> findSaved(@AuthenticationPrincipal User user) {
+        User current = currentUser.require(user);
+        return playlistService.findSaved(current).stream()
+                .map(saved -> PlaylistResponse.from(saved.getPlaylist(), current.getId(), true))
+                .toList();
     }
 
     @GetMapping("/{id}")
     public PlaylistResponse findById(@AuthenticationPrincipal User user, @PathVariable Long id) {
-        return PlaylistResponse.from(playlistService.findById(currentUser.require(user), id));
+        User current = currentUser.require(user);
+        return PlaylistResponse.from(
+                playlistService.findPublicById(id),
+                current.getId(),
+                playlistService.isSavedBy(current, id)
+        );
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public PlaylistResponse create(@AuthenticationPrincipal User user, @Valid @RequestBody PlaylistRequest request) {
-        return PlaylistResponse.from(playlistService.create(currentUser.require(user), request));
+        User current = currentUser.require(user);
+        return PlaylistResponse.from(playlistService.create(current, request), current.getId(), false);
     }
 
     @PutMapping("/{id}")
     public PlaylistResponse update(@AuthenticationPrincipal User user, @PathVariable Long id,
                                    @Valid @RequestBody PlaylistRequest request) {
-        return PlaylistResponse.from(playlistService.update(currentUser.require(user), id, request));
+        User current = currentUser.require(user);
+        return PlaylistResponse.from(playlistService.update(current, id, request), current.getId(), false);
     }
 
     @DeleteMapping("/{id}")
@@ -64,12 +94,26 @@ public class PlaylistController {
     @PostMapping("/{id}/tabs")
     public PlaylistResponse addTab(@AuthenticationPrincipal User user, @PathVariable Long id,
                                    @Valid @RequestBody AddTabRequest request) {
-        return PlaylistResponse.from(playlistService.addTab(currentUser.require(user), id, request.tabId()));
+        User current = currentUser.require(user);
+        return PlaylistResponse.from(playlistService.addTab(current, id, request.tabId()), current.getId(), false);
     }
 
     @DeleteMapping("/{playlistId}/tabs/{tabId}")
     public PlaylistResponse removeTab(@AuthenticationPrincipal User user, @PathVariable Long playlistId,
                                       @PathVariable Long tabId) {
-        return PlaylistResponse.from(playlistService.removeTab(currentUser.require(user), playlistId, tabId));
+        User current = currentUser.require(user);
+        return PlaylistResponse.from(playlistService.removeTab(current, playlistId, tabId), current.getId(), false);
+    }
+
+    @PostMapping("/{id}/save")
+    public PlaylistResponse savePlaylist(@AuthenticationPrincipal User user, @PathVariable Long id) {
+        User current = currentUser.require(user);
+        return PlaylistResponse.from(playlistService.savePlaylist(current, id), current.getId(), true);
+    }
+
+    @DeleteMapping("/{id}/save")
+    public PlaylistResponse unsavePlaylist(@AuthenticationPrincipal User user, @PathVariable Long id) {
+        User current = currentUser.require(user);
+        return PlaylistResponse.from(playlistService.unsavePlaylist(current, id), current.getId(), false);
     }
 }

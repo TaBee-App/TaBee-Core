@@ -25,8 +25,19 @@ public class TabService {
     }
 
     @Transactional(readOnly = true)
+    public List<Tab> findPublicTabs() {
+        return tabRepository.findAllByOrderByCreatedAtDesc();
+    }
+
+    @Transactional(readOnly = true)
     public Tab findById(Long id) {
         return tabRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tab not found"));
+    }
+
+    @Transactional(readOnly = true)
+    public Tab findByOwnerAndId(User owner, Long id) {
+        return tabRepository.findByIdAndOwnerId(id, owner.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tab not found"));
     }
 
@@ -47,8 +58,7 @@ public class TabService {
 
     @Transactional
     public Tab update(User owner, Long id, TabUpdateRequest request) {
-        Tab tab = findById(id);
-        ensureOwner(tab, owner);
+        Tab tab = findByOwnerAndId(owner, id);
 
         if (request.title() != null && !request.title().isBlank()) {
             tab.setTitle(request.title());
@@ -76,14 +86,6 @@ public class TabService {
 
     @Transactional
     public void delete(User owner, Long id) {
-        Tab tab = findById(id);
-        ensureOwner(tab, owner);
-        tabRepository.delete(tab);
-    }
-
-    private void ensureOwner(Tab tab, User owner) {
-        if (!tab.getOwner().getId().equals(owner.getId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Tab does not belong to current user");
-        }
+        tabRepository.delete(findByOwnerAndId(owner, id));
     }
 }

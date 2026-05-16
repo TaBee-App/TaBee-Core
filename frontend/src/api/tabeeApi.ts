@@ -1,0 +1,198 @@
+import { apiFetch } from "./apiClient";
+import type {
+  AudioUploadAndProcessResponse,
+  GeneratedNoteEvent,
+  GeneratedTab,
+  GenerateTabRequest,
+  PlaylistRequest,
+  PlaylistResponse,
+  TabMetadataUpdate,
+  TabResponse
+} from "../types/tab";
+
+export async function generateTab(request: GenerateTabRequest): Promise<GeneratedTab> {
+  if (request.instrument !== "bass") {
+    throw new Error("The connected backend pipeline currently supports bass recordings only.");
+  }
+
+  const formData = new FormData();
+  formData.append("file", request.file);
+
+  const response = await apiFetch<AudioUploadAndProcessResponse>("/api/audio-files/upload-and-process", {
+    method: "POST",
+    body: formData
+  });
+
+  let tab = response.tab;
+  const title = request.title.trim();
+
+  if (title && title !== tab.title) {
+    tab = await apiFetch<TabResponse>(`/api/tabs/${tab.id}`, {
+      method: "PUT",
+      body: JSON.stringify({ title })
+    });
+  }
+
+  return toGeneratedTab(tab, request.file.name);
+}
+
+export async function listTabs(): Promise<GeneratedTab[]> {
+  const tabs = await apiFetch<TabResponse[]>("/api/tabs");
+  return tabs.map((tab) => toGeneratedTab(tab));
+}
+
+export async function listPublicTabs(): Promise<GeneratedTab[]> {
+  const tabs = await apiFetch<TabResponse[]>("/api/tabs/public");
+  return tabs.map((tab) => toGeneratedTab(tab, "uploaded-audio", true));
+}
+
+export async function listPublicTabsByUser(userId: string): Promise<GeneratedTab[]> {
+  const tabs = await listPublicTabs();
+  return tabs.filter((tab) => String(tab.ownerUserId) === userId);
+}
+
+export async function getGeneratedTab(tabId: string): Promise<GeneratedTab> {
+  const tab = await apiFetch<TabResponse>(`/api/tabs/${tabId}`);
+  return toGeneratedTab(tab);
+}
+
+export async function getPublicGeneratedTab(tabId: string): Promise<GeneratedTab> {
+  const tab = await apiFetch<TabResponse>(`/api/tabs/public/${tabId}`);
+  return toGeneratedTab(tab, "uploaded-audio", true);
+}
+
+export async function deleteGeneratedTab(tabId: string): Promise<void> {
+  await apiFetch<null>(`/api/tabs/${tabId}`, {
+    method: "DELETE"
+  });
+}
+
+export async function updateGeneratedTab(tabId: string, metadata: TabMetadataUpdate): Promise<GeneratedTab> {
+  const tab = await apiFetch<TabResponse>(`/api/tabs/${tabId}`, {
+    method: "PUT",
+    body: JSON.stringify(metadata)
+  });
+  return toGeneratedTab(tab);
+}
+
+export async function listPlaylists(): Promise<PlaylistResponse[]> {
+  return apiFetch<PlaylistResponse[]>("/api/playlists");
+}
+
+export async function listPlaylistArchive(): Promise<PlaylistResponse[]> {
+  return apiFetch<PlaylistResponse[]>("/api/playlists/archive");
+}
+
+export async function listPlaylistArchiveByUser(userId: string): Promise<PlaylistResponse[]> {
+  const playlists = await listPlaylistArchive();
+  return playlists.filter((playlist) => String(playlist.ownerUserId) === userId);
+}
+
+export async function listSavedPlaylists(): Promise<PlaylistResponse[]> {
+  return apiFetch<PlaylistResponse[]>("/api/playlists/saved");
+}
+
+export async function getPlaylist(playlistId: string): Promise<PlaylistResponse> {
+  return apiFetch<PlaylistResponse>(`/api/playlists/${playlistId}`);
+}
+
+export async function createPlaylist(request: PlaylistRequest): Promise<PlaylistResponse> {
+  return apiFetch<PlaylistResponse>("/api/playlists", {
+    method: "POST",
+    body: JSON.stringify(request)
+  });
+}
+
+export async function deletePlaylist(playlistId: number): Promise<void> {
+  await apiFetch<null>(`/api/playlists/${playlistId}`, {
+    method: "DELETE"
+  });
+}
+
+export async function addTabToPlaylist(playlistId: number, tabId: string): Promise<PlaylistResponse> {
+  return apiFetch<PlaylistResponse>(`/api/playlists/${playlistId}/tabs`, {
+    method: "POST",
+    body: JSON.stringify({ tabId: Number(tabId) })
+  });
+}
+
+export async function removeTabFromPlaylist(playlistId: number, tabId: number): Promise<PlaylistResponse> {
+  return apiFetch<PlaylistResponse>(`/api/playlists/${playlistId}/tabs/${tabId}`, {
+    method: "DELETE"
+  });
+}
+
+export async function savePlaylist(playlistId: number): Promise<PlaylistResponse> {
+  return apiFetch<PlaylistResponse>(`/api/playlists/${playlistId}/save`, {
+    method: "POST"
+  });
+}
+
+export async function unsavePlaylist(playlistId: number): Promise<PlaylistResponse> {
+  return apiFetch<PlaylistResponse>(`/api/playlists/${playlistId}/save`, {
+    method: "DELETE"
+  });
+}
+
+function toGeneratedTab(tab: TabResponse, uploadedFileName = "uploaded-audio", publicAudio = false): GeneratedTab {
+  const jsonData = tab.jsonData || {};
+  return {
+    id: String(tab.id),
+    ownerUserId: tab.ownerUserId,
+    ownerUsername: tab.ownerUsername,
+    title: tab.title,
+    fileName: sourceFileName(jsonData.sourceAudio) || uploadedFileName,
+    instrument: jsonData.instrument || "bass",
+    artist: tab.artist,
+    tuning: tab.tuning ?? jsonData.tuning ?? null,
+    alphaTex: toAlphaTex(tab),
+    audioUrl: jsonData.sourceAudioFile ? `/api/tabs/${publicAudio ? "public/" : ""}${tab.id}/audio` : undefined,
+    tempo: tab.estimatedTempo ?? jsonData.estimatedTempo ?? null,
+    createdAt: new Date(tab.createdAt).toLocaleString()
+  };
+}
+
+function toAlphaTex(tab: TabResponse) {
+  const jsonData = tab.jsonData || {};
+  const tuning = (tab.tuning || jsonData.tuning || "BEADG").toUpperCase();
+  const tuningText = tuning === "BEADG" ? "(G2 D2 A1 E1 B0)" : "(G2 D2 A1 E1)";
+  const notes = [...(jsonData.noteEvents || [])].sort((left, right) => Number(left.time) - Number(right.time));
+  const playableNotes = notes.map(toAlphaTexNote);
+  const body = chunk(playableNotes.length ? playableNotes : ["r"], 16)
+    .map((line) => `:8 ${line.join(" ")} |`)
+    .join("\n");
+
+  return String.raw`\title "${escapeAlphaTexText(tab.title)}"
+\artist "${escapeAlphaTexText(tab.artist || "TaBee")}"
+\track "Bass"
+\staff {tabs}
+\tuning ${tuningText}
+${body}`;
+}
+
+function toAlphaTexNote(note: GeneratedNoteEvent) {
+  if (note.fret == null || note.stringNumber == null) {
+    return "r";
+  }
+
+  return `${note.fret}.${note.stringNumber}`;
+}
+
+function chunk<T>(items: T[], size: number) {
+  const chunks: T[][] = [];
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+  return chunks;
+}
+
+function sourceFileName(sourceAudio?: string) {
+  if (!sourceAudio) {
+    return "";
+  }
+  return sourceAudio.split(/[\\/]/).pop() || sourceAudio;
+}
+
+function escapeAlphaTexText(value: string) {
+  return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}

@@ -13,15 +13,30 @@ import com.tabee.backend.user.UserDtos.UserUpdateRequest;
 @Service
 public class UserService {
     private final UserRepository userRepository;
+    private final UserFollowRepository userFollowRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository,
+                       UserFollowRepository userFollowRepository,
+                       PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.userFollowRepository = userFollowRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
     public List<User> findAll() {
         return userRepository.findAll();
+    }
+
+    public List<User> search(String query) {
+        String normalized = query == null ? "" : query.trim();
+        if (normalized.isBlank()) {
+            return List.of();
+        }
+        return userRepository.findTop12ByUsernameContainingIgnoreCaseOrFullNameContainingIgnoreCaseOrderByUsernameAsc(
+                normalized,
+                normalized
+        );
     }
 
     public User findById(Long id) {
@@ -65,6 +80,46 @@ public class UserService {
     public void delete(Long id) {
         User user = findById(id);
         userRepository.delete(user);
+    }
+
+    public List<UserFollow> findFollowing(User user) {
+        return userFollowRepository.findByFollower_IdOrderByCreatedAtDesc(user.getId());
+    }
+
+    public List<UserFollow> findFollowers(User user) {
+        return userFollowRepository.findByFollowed_IdOrderByCreatedAtDesc(user.getId());
+    }
+
+    public boolean isFollowing(User follower, Long followedUserId) {
+        return userFollowRepository.existsByFollower_IdAndFollowed_Id(follower.getId(), followedUserId);
+    }
+
+    public long followingCount(Long userId) {
+        return userFollowRepository.countByFollower_Id(userId);
+    }
+
+    public long followerCount(Long userId) {
+        return userFollowRepository.countByFollowed_Id(userId);
+    }
+
+    public User follow(User follower, Long followedUserId) {
+        if (follower.getId().equals(followedUserId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You cannot follow yourself");
+        }
+
+        User followed = findById(followedUserId);
+        UserFollow follow = new UserFollow();
+        follow.setId(new UserFollowId(follower.getId(), followed.getId()));
+        follow.setFollower(follower);
+        follow.setFollowed(followed);
+        userFollowRepository.save(follow);
+        return followed;
+    }
+
+    public User unfollow(User follower, Long followedUserId) {
+        User followed = findById(followedUserId);
+        userFollowRepository.deleteById(new UserFollowId(follower.getId(), followedUserId));
+        return followed;
     }
 
     private void ensureUsernameAvailable(String username, Long currentUserId) {

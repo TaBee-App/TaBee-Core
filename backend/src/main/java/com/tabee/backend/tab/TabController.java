@@ -5,6 +5,9 @@ import java.util.List;
 import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.core.io.Resource;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,10 +29,12 @@ import com.tabee.backend.user.User;
 @RequestMapping("/api/tabs")
 public class TabController {
     private final TabService tabService;
+    private final TabAudioStorage tabAudioStorage;
     private final CurrentUser currentUser;
 
-    public TabController(TabService tabService, CurrentUser currentUser) {
+    public TabController(TabService tabService, TabAudioStorage tabAudioStorage, CurrentUser currentUser) {
         this.tabService = tabService;
+        this.tabAudioStorage = tabAudioStorage;
         this.currentUser = currentUser;
     }
 
@@ -38,9 +43,35 @@ public class TabController {
         return tabService.findByOwner(this.currentUser.require(currentUser)).stream().map(TabResponse::from).toList();
     }
 
-    @GetMapping("/{id}")
-    public TabResponse findById(@PathVariable Long id) {
+    @GetMapping("/public")
+    public List<TabResponse> findPublicTabs() {
+        return tabService.findPublicTabs().stream().map(TabResponse::from).toList();
+    }
+
+    @GetMapping("/public/{id}")
+    public TabResponse findPublicById(@PathVariable Long id) {
         return TabResponse.from(tabService.findById(id));
+    }
+
+    @GetMapping("/{id}")
+    public TabResponse findById(@AuthenticationPrincipal User currentUser, @PathVariable Long id) {
+        return TabResponse.from(tabService.findByOwnerAndId(this.currentUser.require(currentUser), id));
+    }
+
+    @GetMapping("/{id}/audio")
+    public ResponseEntity<Resource> findAudio(@AuthenticationPrincipal User currentUser, @PathVariable Long id) {
+        Tab tab = tabService.findByOwnerAndId(this.currentUser.require(currentUser), id);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(tabAudioStorage.load(tab));
+    }
+
+    @GetMapping("/public/{id}/audio")
+    public ResponseEntity<Resource> findPublicAudio(@PathVariable Long id) {
+        Tab tab = tabService.findById(id);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(tabAudioStorage.load(tab));
     }
 
     @PostMapping

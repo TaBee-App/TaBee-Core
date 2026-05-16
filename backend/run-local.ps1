@@ -1,6 +1,12 @@
 $ErrorActionPreference = "Stop"
 
-$env:JAVA_HOME = "C:\Program Files\Java\jdk-17"
+$jdk17 = "C:\Program Files\Java\jdk-17"
+$jdk21 = "C:\Program Files\Java\jdk-21"
+if (Test-Path $jdk17) {
+    $env:JAVA_HOME = $jdk17
+} elseif (Test-Path $jdk21) {
+    $env:JAVA_HOME = $jdk21
+}
 $env:Path = "$env:JAVA_HOME\bin;$env:Path"
 
 $envFile = Join-Path $PSScriptRoot ".env"
@@ -42,6 +48,33 @@ if (-not $env:SPRING_JPA_HIBERNATE_DDL_AUTO) {
     $env:SPRING_JPA_HIBERNATE_DDL_AUTO = "none"
 }
 
+if (-not $env:TABEE_CORE_ROOT) {
+    $env:TABEE_CORE_ROOT = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+}
+
+if (-not $env:TABEE_UPLOAD_DIR) {
+    $env:TABEE_UPLOAD_DIR = (Join-Path $PSScriptRoot "uploads")
+}
+
+if (-not $env:SERVER_ADDRESS) {
+    $env:SERVER_ADDRESS = "127.0.0.1"
+}
+
+if (-not $env:TABEE_PYTHON_COMMAND) {
+    $bundledPython = "C:\Users\karataskn20\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe"
+    if (Get-Command "python" -ErrorAction SilentlyContinue) {
+        $env:TABEE_PYTHON_COMMAND = "python"
+    } elseif (Test-Path $bundledPython) {
+        $env:TABEE_PYTHON_COMMAND = $bundledPython
+    }
+}
+
+$mavenCommand = "mvn"
+$bundledMaven = "C:\Program Files\JetBrains\IntelliJ IDEA 2025.3\plugins\maven\lib\maven3\bin\mvn.cmd"
+if (-not (Get-Command $mavenCommand -ErrorAction SilentlyContinue) -and (Test-Path $bundledMaven)) {
+    $mavenCommand = $bundledMaven
+}
+
 $existingPorts = Get-NetTCPConnection -LocalPort 8080 -ErrorAction SilentlyContinue |
     Where-Object { $_.State -eq "Listen" -and $_.OwningProcess -gt 0 }
 
@@ -54,5 +87,5 @@ if ($existingPorts) {
     Start-Sleep -Seconds 2
 }
 
-mvn package -DskipTests
+& $mavenCommand package -DskipTests
 java -jar target\tabee-backend-0.0.1-SNAPSHOT.jar

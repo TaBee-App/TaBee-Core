@@ -18,15 +18,18 @@ import com.tabee.backend.user.User;
 public class PlaylistService {
     private final UserPlaylistRepository playlistRepository;
     private final PlaylistTabRepository playlistTabRepository;
+    private final SavedPlaylistRepository savedPlaylistRepository;
     private final TabService tabService;
     private final EntityManager entityManager;
 
     public PlaylistService(UserPlaylistRepository playlistRepository,
                            PlaylistTabRepository playlistTabRepository,
+                           SavedPlaylistRepository savedPlaylistRepository,
                            TabService tabService,
                            EntityManager entityManager) {
         this.playlistRepository = playlistRepository;
         this.playlistTabRepository = playlistTabRepository;
+        this.savedPlaylistRepository = savedPlaylistRepository;
         this.tabService = tabService;
         this.entityManager = entityManager;
     }
@@ -37,11 +40,30 @@ public class PlaylistService {
     }
 
     @Transactional(readOnly = true)
-    public UserPlaylist findById(User owner, Long id) {
-        UserPlaylist playlist = playlistRepository.findById(id)
+    public List<UserPlaylist> findArchive() {
+        return playlistRepository.findAllByOrderByCreatedAtDesc();
+    }
+
+    @Transactional(readOnly = true)
+    public List<SavedPlaylist> findSaved(User user) {
+        return savedPlaylistRepository.findByUser_IdOrderBySavedAtDesc(user.getId());
+    }
+
+    @Transactional(readOnly = true)
+    public UserPlaylist findPublicById(Long id) {
+        return playlistRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Playlist not found"));
-        ensureOwner(playlist, owner);
-        return playlist;
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isSavedBy(User user, Long playlistId) {
+        return savedPlaylistRepository.existsByUser_IdAndPlaylist_Id(user.getId(), playlistId);
+    }
+
+    @Transactional(readOnly = true)
+    public UserPlaylist findById(User owner, Long id) {
+        return playlistRepository.findByIdAndOwnerId(id, owner.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Playlist not found"));
     }
 
     @Transactional
@@ -69,7 +91,7 @@ public class PlaylistService {
     @Transactional
     public UserPlaylist addTab(User owner, Long playlistId, Long tabId) {
         findById(owner, playlistId);
-        Tab tab = tabService.findById(tabId);
+        Tab tab = tabService.findByOwnerAndId(owner, tabId);
 
         playlistTabRepository.insertIgnoreConflict(playlistId, tab.getId());
         entityManager.flush();
@@ -89,9 +111,24 @@ public class PlaylistService {
         return findById(owner, playlistId);
     }
 
-    private void ensureOwner(UserPlaylist playlist, User owner) {
-        if (!playlist.getOwner().getId().equals(owner.getId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Playlist does not belong to current user");
+    @Transactional
+    public UserPlaylist savePlaylist(User user, Long playlistId) {
+        UserPlaylist playlist = findPublicById(playlistId);
+        if (playlist.getOwner().getId().equals(user.getId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You already created this playlist");
         }
+        SavedPlaylist savedPlaylist = new SavedPlaylist();
+        savedPlaylist.setId(new SavedPlaylistId(user.getId(), playlistId));
+        savedPlaylist.setUser(user);
+        savedPlaylist.setPlaylist(playlist);
+        savedPlaylistRepository.save(savedPlaylist);
+        return findPublicById(playlistId);
     }
+
+    @Transactional
+    public UserPlaylist unsavePlaylist(User user, Long playlistId) {
+        savedPlaylistRepository.deleteById(new SavedPlaylistId(user.getId(), playlistId));
+        return findPublicById(playlistId);
+    }
+
 }

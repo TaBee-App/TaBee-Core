@@ -8,6 +8,7 @@ import java.time.Duration;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -21,17 +22,20 @@ import com.tabee.backend.user.User;
 @Service
 public class TabProcessingService {
     private final TabService tabService;
+    private final TabAudioStorage tabAudioStorage;
     private final ObjectMapper objectMapper;
     private final Path coreRoot;
     private final String pythonCommand;
     private final Duration processingTimeout;
 
     public TabProcessingService(TabService tabService,
+                                TabAudioStorage tabAudioStorage,
                                 ObjectMapper objectMapper,
                                 @Value("${tabee.core-root:..}") String coreRoot,
                                 @Value("${tabee.python-command:python}") String pythonCommand,
                                 @Value("${tabee.processing-timeout-minutes:10}") long processingTimeoutMinutes) {
         this.tabService = tabService;
+        this.tabAudioStorage = tabAudioStorage;
         this.objectMapper = objectMapper;
         this.coreRoot = Path.of(coreRoot).toAbsolutePath().normalize();
         this.pythonCommand = pythonCommand;
@@ -68,7 +72,17 @@ public class TabProcessingService {
                     result.estimatedTempo(),
                     tabJson
             );
-            return tabService.create(owner, request);
+            Tab tab = tabService.create(owner, request);
+            String storedAudioFile = tabAudioStorage.store(tab, audioPath, originalFilename);
+            ObjectNode jsonWithAudio = tabJson.deepCopy();
+            jsonWithAudio.put(TabAudioStorage.AUDIO_FILE_KEY, storedAudioFile);
+            return tabService.update(owner, tab.getId(), new TabDtos.TabUpdateRequest(
+                    null,
+                    null,
+                    null,
+                    null,
+                    jsonWithAudio
+            ));
         } catch (IOException e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Could not store temporary audio file", e);
         } finally {
