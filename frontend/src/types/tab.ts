@@ -13,6 +13,8 @@ export interface GeneratedTab {
   audioUrl?: string;
   tempo?: number | null;
   createdAt: string;
+  createdByCurrentUser?: boolean;
+  favoritedByCurrentUser?: boolean;
 }
 
 export interface GenerateTabRequest {
@@ -67,6 +69,8 @@ export interface TabResponse {
   estimatedTempo?: number | null;
   createdAt: string;
   updatedAt: string;
+  createdByCurrentUser: boolean;
+  favoritedByCurrentUser: boolean;
   jsonData: GeneratedTabJson;
 }
 

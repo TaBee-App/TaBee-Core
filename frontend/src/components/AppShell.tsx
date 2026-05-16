@@ -1,4 +1,5 @@
-import { Library, ListMusic, LogOut, Settings, Sparkles, UserRound } from "lucide-react";
+import { Compass, LogOut, Search, Settings, Sparkles, UserRound } from "lucide-react";
+import { useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { logout } from "../api/authApi";
 import { getCurrentUser } from "../api/authSession";
@@ -6,6 +7,7 @@ import { getCurrentUser } from "../api/authSession";
 export function AppShell() {
   const navigate = useNavigate();
   const currentUser = getCurrentUser();
+  const [accountOpen, setAccountOpen] = useState(false);
 
   function signOut() {
     logout();
@@ -25,32 +27,41 @@ export function AppShell() {
           </NavLink>
 
           <nav className="nav-tabs" aria-label="Main navigation">
-            <NavLink to="/" end>
-              <Library size={18} />
-              Library
-            </NavLink>
             <NavLink to="/generate">
               <Sparkles size={18} />
               Generate
             </NavLink>
-            <NavLink to="/playlists">
-              <ListMusic size={18} />
-              Playlists
+            <NavLink to="/search">
+              <Search size={18} />
+              Search
             </NavLink>
-            <NavLink to="/settings">
-              <Settings size={18} />
-              Settings
+            <NavLink to="/discover">
+              <Compass size={18} />
+              Discovery
             </NavLink>
           </nav>
 
-          <div className="account-pill">
-            <NavLink to="/profile" className="profile-chip" title="Profile">
+          <div className="account-menu">
+            <button className="account-trigger" title="Account" onClick={() => setAccountOpen((current) => !current)}>
               <UserRound size={17} />
               <span>{currentUser?.username || "Profile"}</span>
-            </NavLink>
-            <button className="icon-btn subtle" title="Logout" onClick={signOut}>
-              <LogOut size={17} />
             </button>
+            {accountOpen ? (
+              <div className="account-dropdown">
+                <NavLink to="/profile" onClick={() => setAccountOpen(false)}>
+                  <UserRound size={17} />
+                  Profile
+                </NavLink>
+                <NavLink to="/settings" onClick={() => setAccountOpen(false)}>
+                  <Settings size={17} />
+                  Settings
+                </NavLink>
+                <button onClick={signOut}>
+                  <LogOut size={17} />
+                  Log out
+                </button>
+              </div>
+            ) : null}
           </div>
         </div>
       </header>

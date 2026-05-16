@@ -158,30 +158,73 @@ a {
   white-space: nowrap;
 }
 
-.account-pill {
-  padding: 4px;
-  border-radius: 8px;
+.account-menu {
+  position: relative;
+  justify-self: end;
 }
 
+.account-trigger,
 .profile-chip {
   min-height: 36px;
   padding: 0 10px;
+  border: 1px solid var(--line);
   border-radius: 6px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.04);
 }
 
+.account-trigger:hover,
 .profile-chip.active,
 .profile-chip:hover {
   color: var(--ink);
   background: var(--panel-3);
 }
 
+.account-trigger span,
 .profile-chip span {
   max-width: 140px;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.account-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 50;
+  min-width: 180px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 4px;
+  background: var(--panel);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+}
+
+.account-dropdown a,
+.account-dropdown button {
+  min-height: 38px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--muted);
+  background: transparent;
+  font-weight: 720;
+  text-align: left;
+}
+
+.account-dropdown a:hover,
+.account-dropdown a.active,
+.account-dropdown button:hover {
+  color: var(--ink);
+  background: var(--panel-3);
 }
 
 .page-grid,
@@ -276,6 +319,37 @@ a {
   background: var(--panel-2);
 }
 
+.social-counts {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.social-counts a {
+  min-height: 42px;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  display: inline-grid;
+  gap: 2px;
+  background: var(--panel-2);
+}
+
+.social-counts a:hover {
+  border-color: var(--accent);
+}
+
+.social-counts strong {
+  color: var(--ink);
+  line-height: 1;
+}
+
+.social-counts span {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
 .library-hero h2,
 .workspace-panel h2,
 .process-panel h2,
@@ -356,6 +430,7 @@ a {
 }
 
 .btn.ghost:hover,
+.btn.ghost.active,
 .icon-btn:hover {
   border-color: var(--accent);
   background: rgba(56, 179, 106, 0.12);
@@ -443,6 +518,10 @@ a {
   border-radius: 8px;
   background: #10161a;
   color: var(--muted);
+}
+
+.search-hero-box {
+  margin-top: 0;
 }
 
 .search-box input,
@@ -696,6 +775,61 @@ a {
   gap: 10px;
 }
 
+.playlist-layer-grid {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.playlist-layer-card {
+  min-height: 108px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  text-align: left;
+  color: var(--ink);
+  background: var(--panel-2);
+}
+
+.playlist-layer-card:hover,
+.playlist-layer-card.active {
+  border-color: var(--accent);
+  background: #10161a;
+}
+
+.playlist-layer-card span {
+  font-weight: 780;
+}
+
+.playlist-layer-card strong {
+  font-size: 1.55rem;
+  line-height: 1;
+  color: var(--accent);
+}
+
+.playlist-layer-card small {
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.playlist-layer-content {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.compact-header {
+  margin-bottom: -2px;
+}
+
+.search-results-section {
+  margin-top: 18px;
+}
+
 .profile-tab-row,
 .profile-playlist-row {
   min-height: 64px;
@@ -765,6 +899,24 @@ a {
   place-items: center;
   color: var(--accent);
   background: #10161a;
+}
+
+.status-chip {
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  background: #10161a;
+  font-size: 0.82rem;
+  font-weight: 760;
+}
+
+.favorite-inline-icon {
+  color: var(--accent);
 }
 
 .profile-row-actions {
@@ -1179,13 +1331,21 @@ audio {
 
   .nav-tabs,
   .status-pill,
-  .account-pill {
+  .account-pill,
+  .account-menu {
     justify-self: stretch;
   }
 
   .status-pill,
-  .account-pill {
+  .account-pill,
+  .account-trigger {
     justify-content: center;
+  }
+
+  .account-dropdown {
+    left: 0;
+    right: auto;
+    width: 100%;
   }
 
   .generator-layout {
@@ -1210,6 +1370,10 @@ audio {
   .profile-hero,
   .profile-grid {
     grid-template-columns: 1fr;
+  }
+
+  .playlist-layer-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 
   .profile-stats {
@@ -1295,5 +1459,84 @@ audio {
 
   .profile-user-row {
     grid-template-columns: 1fr;
+  }
+
+  .playlist-layer-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+
+  html,
+  body {
+    min-height: auto;
+    background: #fff !important;
+    color: #111 !important;
+  }
+
+  .topbar,
+  .player-bar,
+  .score-actions,
+  .playlist-adder,
+  .creator-pill,
+  .form-error,
+  .render-error {
+    display: none !important;
+  }
+
+  .app-shell {
+    min-height: auto;
+    padding: 0;
+  }
+
+  .viewer-page {
+    width: 100%;
+    margin: 0;
+  }
+
+  .score-panel {
+    min-height: auto;
+    border: 0;
+    box-shadow: none;
+    background: #fff;
+    overflow: visible;
+  }
+
+  .score-header {
+    min-height: auto;
+    padding: 0 0 10mm;
+    border: 0;
+    background: #fff;
+    color: #111;
+  }
+
+  .score-kicker {
+    color: #555;
+  }
+
+  .score-title {
+    color: #111;
+    font-size: 24pt;
+  }
+
+  .score-subtitle {
+    color: #444;
+  }
+
+  .score-body {
+    min-height: auto;
+    overflow: visible;
+    background: #fff;
+  }
+
+  .alpha-tab-host {
+    min-height: auto;
+    padding: 0;
+    background: #fff;
   }
 }

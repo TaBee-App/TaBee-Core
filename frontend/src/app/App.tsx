@@ -8,8 +8,10 @@ import { PlaylistsPage } from "../pages/PlaylistsPage";
 import { PlaylistDetailPage } from "../pages/PlaylistDetailPage";
 import { ProfilePage } from "../pages/ProfilePage";
 import { PublicUserPage } from "../pages/PublicUserPage";
+import { SearchPage } from "../pages/SearchPage";
 import { SettingsPage } from "../pages/SettingsPage";
 import { TabViewerPage } from "../pages/TabViewerPage";
+import { UserConnectionsPage } from "../pages/UserConnectionsPage";
 
 export function App() {
   return (
@@ -20,10 +22,13 @@ export function App() {
           <Route element={<AppShell />}>
             <Route index element={<DashboardPage />} />
             <Route path="/generate" element={<GeneratePage />} />
-            <Route path="/playlists" element={<PlaylistsPage />} />
+            <Route path="/search" element={<SearchPage />} />
+            <Route path="/discover" element={<PlaylistsPage />} />
+            <Route path="/playlists" element={<Navigate to="/discover" replace />} />
             <Route path="/playlists/:playlistId" element={<PlaylistDetailPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/users/:userId" element={<PublicUserPage />} />
+            <Route path="/users/:userId/:kind" element={<UserConnectionsPage />} />
             <Route path="/tabs/:tabId" element={<TabViewerPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />

@@ -47,3 +47,11 @@ export async function unfollowUser(userId: number) {
     method: "DELETE"
   });
 }
+
+export async function getUserFollowers(userId: string) {
+  return apiFetch<PublicUserProfile[]>(`/api/users/${userId}/followers`);
+}
+
+export async function getUserFollowing(userId: string) {
+  return apiFetch<PublicUserProfile[]>(`/api/users/${userId}/following`);
+}

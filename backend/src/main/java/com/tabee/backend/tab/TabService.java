@@ -1,6 +1,8 @@
 package com.tabee.backend.tab;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -14,9 +16,11 @@ import com.tabee.backend.user.User;
 @Service
 public class TabService {
     private final TabRepository tabRepository;
+    private final FavoriteTabRepository favoriteTabRepository;
 
-    public TabService(TabRepository tabRepository) {
+    public TabService(TabRepository tabRepository, FavoriteTabRepository favoriteTabRepository) {
         this.tabRepository = tabRepository;
+        this.favoriteTabRepository = favoriteTabRepository;
     }
 
     @Transactional(readOnly = true)
@@ -27,6 +31,16 @@ public class TabService {
     @Transactional(readOnly = true)
     public List<Tab> findPublicTabs() {
         return tabRepository.findAllByOrderByCreatedAtDesc();
+    }
+
+    @Transactional(readOnly = true)
+    public List<FavoriteTab> findFavorites(User user) {
+        return favoriteTabRepository.findByUser_IdOrderByFavoritedAtDesc(user.getId());
+    }
+
+    @Transactional(readOnly = true)
+    public Set<Long> findFavoriteTabIds(User user) {
+        return favoriteTabRepository.findTabIdsByUserId(user.getId()).stream().collect(Collectors.toSet());
     }
 
     @Transactional(readOnly = true)
@@ -77,6 +91,34 @@ public class TabService {
         }
 
         return tabRepository.save(tab);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isFavoritedBy(User user, Long tabId) {
+        return favoriteTabRepository.existsByUser_IdAndTab_Id(user.getId(), tabId);
+    }
+
+    @Transactional
+    public Tab favoriteTab(User user, Long tabId) {
+        Tab tab = findById(tabId);
+        if (tab.getOwner().getId().equals(user.getId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You already created this tab");
+        }
+        FavoriteTabId id = new FavoriteTabId(user.getId(), tabId);
+        if (!favoriteTabRepository.existsById(id)) {
+            FavoriteTab favoriteTab = new FavoriteTab();
+            favoriteTab.setId(id);
+            favoriteTab.setUser(user);
+            favoriteTab.setTab(tab);
+            favoriteTabRepository.save(favoriteTab);
+        }
+        return tab;
+    }
+
+    @Transactional
+    public Tab unfavoriteTab(User user, Long tabId) {
+        favoriteTabRepository.deleteById(new FavoriteTabId(user.getId(), tabId));
+        return findById(tabId);
     }
 
     @Transactional

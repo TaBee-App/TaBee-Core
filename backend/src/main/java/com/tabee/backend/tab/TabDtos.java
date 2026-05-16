@@ -41,9 +41,15 @@ public final class TabDtos {
             Integer estimatedTempo,
             OffsetDateTime createdAt,
             OffsetDateTime updatedAt,
+            boolean createdByCurrentUser,
+            boolean favoritedByCurrentUser,
             JsonNode jsonData
     ) {
         public static TabResponse from(Tab tab) {
+            return from(tab, null, false);
+        }
+
+        public static TabResponse from(Tab tab, Long currentUserId, boolean favoritedByCurrentUser) {
             return new TabResponse(
                     tab.getId(),
                     tab.getOwner().getId(),
@@ -55,6 +61,8 @@ public final class TabDtos {
                     tab.getTabData().getEstimatedTempo(),
                     tab.getCreatedAt(),
                     tab.getUpdatedAt(),
+                    currentUserId != null && tab.getOwner().getId().equals(currentUserId),
+                    favoritedByCurrentUser,
                     tab.getTabData().getJsonData()
             );
         }

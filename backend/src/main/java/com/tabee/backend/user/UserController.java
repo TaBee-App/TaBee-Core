@@ -51,6 +51,24 @@ public class UserController {
         return publicUserResponse(current, userService.findById(id));
     }
 
+    @GetMapping("/{id}/following")
+    public java.util.List<PublicUserResponse> publicFollowing(@AuthenticationPrincipal User user, @PathVariable Long id) {
+        User current = currentUser.require(user);
+        User viewed = userService.findById(id);
+        return userService.findFollowing(viewed).stream()
+                .map(follow -> publicUserResponse(current, follow.getFollowed()))
+                .toList();
+    }
+
+    @GetMapping("/{id}/followers")
+    public java.util.List<PublicUserResponse> publicFollowers(@AuthenticationPrincipal User user, @PathVariable Long id) {
+        User current = currentUser.require(user);
+        User viewed = userService.findById(id);
+        return userService.findFollowers(viewed).stream()
+                .map(follow -> publicUserResponse(current, follow.getFollower()))
+                .toList();
+    }
+
     @GetMapping("/me/following")
     public java.util.List<PublicUserResponse> following(@AuthenticationPrincipal User user) {
         User current = currentUser.require(user);

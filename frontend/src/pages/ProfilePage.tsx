@@ -1,0 +1,386 @@
+import { Music, Plus, Star, UserRound, X } from "lucide-react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { getPublicUser } from "../api/authApi";
+import {
+  addTabToPlaylist,
+  createPlaylist,
+  listFavoriteTabs,
+  listPlaylists,
+  listSavedPlaylists,
+  listTabs
+} from "../api/tabeeApi";
+import { getCurrentUser } from "../api/authSession";
+import type { PublicUserProfile } from "../types/auth";
+import type { GeneratedTab, PlaylistResponse } from "../types/tab";
+
+export function ProfilePage() {
+  const currentUser = getCurrentUser();
+  const [profileSummary, setProfileSummary] = useState<PublicUserProfile | null>(null);
+  const [tabs, setTabs] = useState<GeneratedTab[]>([]);
+  const [favoriteTabs, setFavoriteTabs] = useState<GeneratedTab[]>([]);
+  const [playlists, setPlaylists] = useState<PlaylistResponse[]>([]);
+  const [savedPlaylists, setSavedPlaylists] = useState<PlaylistResponse[]>([]);
+  const [playlistLayer, setPlaylistLayer] = useState<"created" | "saved">("created");
+  const [tabLayer, setTabLayer] = useState<"created" | "favorited">("created");
+  const [selectedPlaylists, setSelectedPlaylists] = useState<Record<string, string>>({});
+  const [playlistName, setPlaylistName] = useState("");
+  const [playlistDescription, setPlaylistDescription] = useState("");
+  const [createOpen, setCreateOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [creatingPlaylist, setCreatingPlaylist] = useState(false);
+  const [savingTabId, setSavingTabId] = useState("");
+  const [error, setError] = useState("");
+
+  const playlistTabIds = useMemo(() => {
+    return new Set(playlists.flatMap((playlist) => playlist.tabs.map((tab) => String(tab.tabId))));
+  }, [playlists]);
+
+  const unplaylistedTabs = useMemo(() => {
+    return tabs.filter((tab) => !playlistTabIds.has(tab.id));
+  }, [playlistTabIds, tabs]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadProfileData() {
+      setLoading(true);
+      setError("");
+      try {
+        const [nextTabs, nextFavoriteTabs, nextPlaylists, nextSavedPlaylists, nextProfileSummary] = await Promise.all([
+          listTabs(),
+          listFavoriteTabs(),
+          listPlaylists(),
+          listSavedPlaylists(),
+          currentUser?.id ? getPublicUser(String(currentUser.id)) : Promise.resolve(null)
+        ]);
+        if (!active) return;
+        setTabs(nextTabs);
+        setFavoriteTabs(nextFavoriteTabs);
+        setPlaylists(nextPlaylists);
+        setSavedPlaylists(nextSavedPlaylists);
+        setProfileSummary(nextProfileSummary);
+        setSelectedPlaylists(defaultPlaylistSelections(nextTabs, nextPlaylists));
+      } catch (caught) {
+        if (active) {
+          setError(caught instanceof Error ? caught.message : "Could not load profile.");
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadProfileData();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function addToPlaylist(tabId: string) {
+    const playlistId = selectedPlaylists[tabId] || String(playlists[0]?.id || "");
+    if (!playlistId) {
+      setError("Create a playlist before adding tabs.");
+      return;
+    }
+
+    setSavingTabId(tabId);
+    setError("");
+    try {
+      const playlist = await addTabToPlaylist(Number(playlistId), tabId);
+      setPlaylists((current) => current.map((item) => (item.id === playlist.id ? playlist : item)));
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not add tab to playlist.");
+    } finally {
+      setSavingTabId("");
+    }
+  }
+
+  async function submitPlaylist(event: FormEvent) {
+    event.preventDefault();
+    const name = playlistName.trim();
+    if (!name) {
+      setError("Playlist name is required.");
+      return;
+    }
+
+    setCreatingPlaylist(true);
+    setError("");
+    try {
+      const playlist = await createPlaylist({
+        name,
+        description: playlistDescription.trim() || null
+      });
+      const nextPlaylists = [playlist, ...playlists];
+      setPlaylists(nextPlaylists);
+      setSelectedPlaylists(defaultPlaylistSelections(tabs, nextPlaylists));
+      setPlaylistName("");
+      setPlaylistDescription("");
+      setCreateOpen(false);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not create playlist.");
+    } finally {
+      setCreatingPlaylist(false);
+    }
+  }
+
+  return (
+    <main className="profile-page">
+      <section className="profile-hero">
+        <div className="profile-avatar">
+          <UserRound size={28} />
+        </div>
+        <div>
+          <p className="eyebrow">Profile</p>
+          <h2>{currentUser?.fullName || currentUser?.username || "TaBee user"}</h2>
+          <p>@{currentUser?.username || "profile"} / {currentUser?.email || "Signed in to TaBee"}</p>
+          {profileSummary ? (
+            <div className="social-counts">
+              <Link to={`/users/${profileSummary.id}/followers`}>
+                <strong>{profileSummary.followerCount}</strong>
+                <span>Followers</span>
+              </Link>
+              <Link to={`/users/${profileSummary.id}/following`}>
+                <strong>{profileSummary.followingCount}</strong>
+                <span>Following</span>
+              </Link>
+            </div>
+          ) : null}
+        </div>
+        <div className="profile-stats">
+          <span>{tabs.length} tabs</span>
+          <span>{favoriteTabs.length} favorites</span>
+          <span>{playlists.length} created</span>
+          <span>{savedPlaylists.length} saved</span>
+          <span>{unplaylistedTabs.length} unplaylisted</span>
+        </div>
+      </section>
+
+      {error ? <div className="form-error">{error}</div> : null}
+
+      <section className="profile-grid">
+        <div className="profile-panel">
+          <div className="section-header">
+            <div>
+              <h2>My playlists</h2>
+              <p>{loading ? "Loading playlists..." : `${playlists.length} created / ${savedPlaylists.length} saved`}</p>
+            </div>
+            <button className="btn primary" onClick={() => setCreateOpen(true)}>
+              <Plus size={18} />
+              New
+            </button>
+          </div>
+
+          <div className="playlist-layer-grid">
+            <button
+              className={`playlist-layer-card${playlistLayer === "created" ? " active" : ""}`}
+              onClick={() => setPlaylistLayer("created")}
+            >
+              <span>Created playlists</span>
+              <strong>{playlists.length}</strong>
+              <small>Playlists you own and manage</small>
+            </button>
+            <button
+              className={`playlist-layer-card${playlistLayer === "saved" ? " active" : ""}`}
+              onClick={() => setPlaylistLayer("saved")}
+            >
+              <span>Saved playlists</span>
+              <strong>{savedPlaylists.length}</strong>
+              <small>Playlists you saved from others</small>
+            </button>
+          </div>
+
+          <div className="playlist-layer-content">
+            <div className="section-header compact-header">
+              <div>
+                <h2>{playlistLayer === "created" ? "Created playlists" : "Saved playlists"}</h2>
+                <p>
+                  {playlistLayer === "created"
+                    ? `${playlists.length} playlists created by you`
+                    : `${savedPlaylists.length} saved collections`}
+                </p>
+              </div>
+            </div>
+
+            <div className="profile-list">
+              {(playlistLayer === "created" ? playlists : savedPlaylists).map((playlist) => (
+                <Link className="profile-playlist-row" to={`/playlists/${playlist.id}`} key={playlist.id}>
+                  <div>
+                    <span>{playlist.name}</span>
+                    <small>
+                      {playlistLayer === "created"
+                        ? playlist.description || `${playlist.tabs.length} tabs`
+                        : `by ${playlist.ownerUsername} / ${playlist.tabs.length} tabs`}
+                    </small>
+                  </div>
+                  <strong>{playlist.tabs.length}</strong>
+                </Link>
+              ))}
+            </div>
+
+            {!loading && playlistLayer === "created" && !playlists.length ? (
+              <div className="empty-panel compact">
+                <h3>No created playlists yet</h3>
+                <p>Create a playlist, then add your unplaylisted tabs to it.</p>
+              </div>
+            ) : null}
+
+            {!loading && playlistLayer === "saved" && !savedPlaylists.length ? (
+              <div className="empty-panel compact">
+                <h3>No saved playlists yet</h3>
+                <p>Use Discovery to save playlists created by other people.</p>
+              </div>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="profile-panel">
+          <div className="section-header">
+            <div>
+              <h2>My tabs</h2>
+              <p>{loading ? "Loading tabs..." : `${tabs.length} created / ${favoriteTabs.length} favorited`}</p>
+            </div>
+            <Music size={20} />
+          </div>
+
+          <div className="playlist-layer-grid">
+            <button
+              className={`playlist-layer-card${tabLayer === "created" ? " active" : ""}`}
+              onClick={() => setTabLayer("created")}
+            >
+              <span>Created tabs</span>
+              <strong>{tabs.length}</strong>
+              <small>{unplaylistedTabs.length} still waiting for a playlist</small>
+            </button>
+            <button
+              className={`playlist-layer-card${tabLayer === "favorited" ? " active" : ""}`}
+              onClick={() => setTabLayer("favorited")}
+            >
+              <span>Favorited tabs</span>
+              <strong>{favoriteTabs.length}</strong>
+              <small>Tabs you liked from other users</small>
+            </button>
+          </div>
+
+          <div className="playlist-layer-content">
+            <div className="section-header compact-header">
+              <div>
+                <h2>{tabLayer === "created" ? "Created tabs" : "Favorited tabs"}</h2>
+                <p>
+                  {tabLayer === "created"
+                    ? `${unplaylistedTabs.length} unplaylisted / ${tabs.length} total`
+                    : `${favoriteTabs.length} tabs saved for later`}
+                </p>
+              </div>
+              {tabLayer === "favorited" ? <Star size={18} /> : null}
+            </div>
+
+          <div className="profile-list">
+            {(tabLayer === "created" ? tabs : favoriteTabs).map((tab) => (
+              <article className="profile-tab-row" key={tab.id}>
+                <Link to={`/tabs/${tab.id}`}>
+                  <span>{tab.title}</span>
+                  <small>
+                    {tabLayer === "created"
+                      ? `${tab.fileName} / ${tab.instrument}`
+                      : `by ${tab.ownerUsername} / ${tab.artist || tab.instrument}`}
+                  </small>
+                </Link>
+                {tabLayer === "created" ? (
+                  playlistTabIds.has(tab.id) ? (
+                    <span className="status-chip">In playlist</span>
+                  ) : (
+                    <div className="profile-row-actions">
+                      <select
+                        value={selectedPlaylists[tab.id] || ""}
+                        onChange={(event) =>
+                          setSelectedPlaylists((current) => ({ ...current, [tab.id]: event.target.value }))
+                        }
+                        disabled={!playlists.length}
+                      >
+                        {!playlists.length ? <option value="">No playlists</option> : null}
+                        {playlists.map((playlist) => (
+                          <option key={playlist.id} value={playlist.id}>
+                            {playlist.name}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        className="icon-btn primary"
+                        title="Add to playlist"
+                        disabled={!playlists.length || savingTabId === tab.id}
+                        onClick={() => addToPlaylist(tab.id)}
+                      >
+                        <Plus size={18} />
+                      </button>
+                    </div>
+                  )
+                ) : (
+                  <Star className="favorite-inline-icon" size={18} />
+                )}
+              </article>
+            ))}
+          </div>
+
+          {!loading && tabLayer === "created" && !tabs.length ? (
+            <div className="empty-panel compact">
+              <h3>No created tabs yet</h3>
+              <p>Generate a tab, then organize it into playlists here.</p>
+            </div>
+          ) : null}
+
+          {!loading && tabLayer === "favorited" && !favoriteTabs.length ? (
+            <div className="empty-panel compact">
+              <h3>No favorited tabs yet</h3>
+              <p>Open tabs from Search or Discovery and favorite the ones you want to keep.</p>
+            </div>
+          ) : null}
+          </div>
+        </div>
+
+      </section>
+
+      {createOpen ? (
+        <div className="modal-backdrop" role="presentation">
+          <form className="modal-panel" onSubmit={submitPlaylist}>
+            <div className="section-header">
+              <div>
+                <h2>Create playlist</h2>
+                <p>Build a collection from your tabs.</p>
+              </div>
+              <button className="icon-btn subtle" type="button" title="Close" onClick={() => setCreateOpen(false)}>
+                <X size={17} />
+              </button>
+            </div>
+            <label className="field">
+              <span>Name</span>
+              <input
+                value={playlistName}
+                onChange={(event) => setPlaylistName(event.target.value)}
+                placeholder="Practice set"
+              />
+            </label>
+            <label className="field">
+              <span>Description</span>
+              <input
+                value={playlistDescription}
+                onChange={(event) => setPlaylistDescription(event.target.value)}
+                placeholder="Optional notes"
+              />
+            </label>
+            <button className="btn primary full" disabled={creatingPlaylist} type="submit">
+              <Plus size={18} />
+              {creatingPlaylist ? "Creating..." : "Create playlist"}
+            </button>
+          </form>
+        </div>
+      ) : null}
+    </main>
+  );
+}
+
+function defaultPlaylistSelections(tabs: GeneratedTab[], playlists: PlaylistResponse[]) {
+  const firstPlaylist = playlists[0] ? String(playlists[0].id) : "";
+  return Object.fromEntries(tabs.map((tab) => [tab.id, firstPlaylist]));
+}

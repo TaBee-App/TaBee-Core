@@ -57,4 +57,31 @@ CREATE INDEX IF NOT EXISTS idx_user_follows_follower_created_at
 CREATE INDEX IF NOT EXISTS idx_user_follows_followed_created_at
     ON user_follows(followed_user_id, created_at DESC);
 
+-- Favorite tabs: separates tabs created by the current user from tabs
+-- created by other users that the current user wants to keep.
+CREATE TABLE IF NOT EXISTS favorite_tabs (
+    user_id BIGINT NOT NULL,
+    tab_id BIGINT NOT NULL,
+    favorited_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT pk_favorite_tabs
+        PRIMARY KEY (user_id, tab_id),
+
+    CONSTRAINT fk_favorite_tabs_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(user_id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_favorite_tabs_tab
+        FOREIGN KEY (tab_id)
+        REFERENCES tabs(tab_id)
+        ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_favorite_tabs_user_favorited_at
+    ON favorite_tabs(user_id, favorited_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_favorite_tabs_tab_id
+    ON favorite_tabs(tab_id);
+
 COMMIT;

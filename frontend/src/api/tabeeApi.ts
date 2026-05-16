@@ -41,6 +41,11 @@ export async function listTabs(): Promise<GeneratedTab[]> {
   return tabs.map((tab) => toGeneratedTab(tab));
 }
 
+export async function listFavoriteTabs(): Promise<GeneratedTab[]> {
+  const tabs = await apiFetch<TabResponse[]>("/api/tabs/favorites");
+  return tabs.map((tab) => toGeneratedTab(tab, "uploaded-audio", true));
+}
+
 export async function listPublicTabs(): Promise<GeneratedTab[]> {
   const tabs = await apiFetch<TabResponse[]>("/api/tabs/public");
   return tabs.map((tab) => toGeneratedTab(tab, "uploaded-audio", true));
@@ -73,6 +78,20 @@ export async function updateGeneratedTab(tabId: string, metadata: TabMetadataUpd
     body: JSON.stringify(metadata)
   });
   return toGeneratedTab(tab);
+}
+
+export async function favoriteTab(tabId: string): Promise<GeneratedTab> {
+  const tab = await apiFetch<TabResponse>(`/api/tabs/${tabId}/favorite`, {
+    method: "POST"
+  });
+  return toGeneratedTab(tab, "uploaded-audio", true);
+}
+
+export async function unfavoriteTab(tabId: string): Promise<GeneratedTab> {
+  const tab = await apiFetch<TabResponse>(`/api/tabs/${tabId}/favorite`, {
+    method: "DELETE"
+  });
+  return toGeneratedTab(tab, "uploaded-audio", true);
 }
 
 export async function listPlaylists(): Promise<PlaylistResponse[]> {
@@ -148,7 +167,9 @@ function toGeneratedTab(tab: TabResponse, uploadedFileName = "uploaded-audio", p
     alphaTex: toAlphaTex(tab),
     audioUrl: jsonData.sourceAudioFile ? `/api/tabs/${publicAudio ? "public/" : ""}${tab.id}/audio` : undefined,
     tempo: tab.estimatedTempo ?? jsonData.estimatedTempo ?? null,
-    createdAt: new Date(tab.createdAt).toLocaleString()
+    createdAt: new Date(tab.createdAt).toLocaleString(),
+    createdByCurrentUser: tab.createdByCurrentUser,
+    favoritedByCurrentUser: tab.favoritedByCurrentUser
   };
 }
 

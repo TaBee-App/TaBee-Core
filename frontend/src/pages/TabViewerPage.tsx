@@ -1,7 +1,15 @@
-import { Download, Pencil, RotateCcw, Save, X } from "lucide-react";
+import { Download, FileDown, Pencil, RotateCcw, Save, Star, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { addTabToPlaylist, getGeneratedTab, getPublicGeneratedTab, listPlaylists, updateGeneratedTab } from "../api/tabeeApi";
+import {
+  addTabToPlaylist,
+  favoriteTab,
+  getGeneratedTab,
+  getPublicGeneratedTab,
+  listPlaylists,
+  unfavoriteTab,
+  updateGeneratedTab
+} from "../api/tabeeApi";
 import { PlayerBar } from "../components/PlayerBar";
 import { TabRenderer } from "../components/TabRenderer";
 import { slugify } from "../lib/format";
@@ -31,6 +39,7 @@ export function TabViewerPage() {
   const [playlists, setPlaylists] = useState<PlaylistResponse[]>([]);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState("");
   const [playlistSaving, setPlaylistSaving] = useState(false);
+  const [favoriteSaving, setFavoriteSaving] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -128,6 +137,25 @@ export function TabViewerPage() {
     URL.revokeObjectURL(url);
   }
 
+  function downloadPdf() {
+    if (!tab) return;
+
+    setPlaying(false);
+    const previousTitle = document.title;
+    document.title = `${slugify(tab.title)}-tab`;
+
+    const restoreTitle = () => {
+      document.title = previousTitle;
+      window.removeEventListener("afterprint", restoreTitle);
+    };
+
+    window.addEventListener("afterprint", restoreTitle);
+    window.setTimeout(() => {
+      window.print();
+      window.setTimeout(restoreTitle, 1000);
+    }, 100);
+  }
+
   function startEditing() {
     if (!tab || tab.id === "demo") return;
     setMetadata(toMetadataForm(tab));
@@ -191,6 +219,22 @@ export function TabViewerPage() {
       setError(caught instanceof Error ? caught.message : "Could not add tab to playlist.");
     } finally {
       setPlaylistSaving(false);
+    }
+  }
+
+  async function toggleFavorite() {
+    if (!tab || tab.id === "demo" || tab.createdByCurrentUser) return;
+
+    setFavoriteSaving(true);
+    setError("");
+    try {
+      const updatedTab = tab.favoritedByCurrentUser ? await unfavoriteTab(tab.id) : await favoriteTab(tab.id);
+      upsertTab(updatedTab);
+      setTab(updatedTab);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not update favorite.");
+    } finally {
+      setFavoriteSaving(false);
     }
   }
 
@@ -286,6 +330,16 @@ export function TabViewerPage() {
                   </button>
                 </div>
               ) : null}
+              {!editing && tab.id !== "demo" && !tab.createdByCurrentUser ? (
+                <button
+                  className={`btn ghost${tab.favoritedByCurrentUser ? " active" : ""}`}
+                  disabled={favoriteSaving}
+                  onClick={toggleFavorite}
+                >
+                  <Star size={17} />
+                  {tab.favoritedByCurrentUser ? "Favorited" : "Favorite"}
+                </button>
+              ) : null}
               {editing ? (
                 <>
                   <button className="btn ghost" disabled={saving} onClick={cancelEditing}>
@@ -314,6 +368,10 @@ export function TabViewerPage() {
               <button className="btn ghost" onClick={downloadAlphaTex}>
                 <Download size={17} />
                 AlphaTex
+              </button>
+              <button className="btn ghost" onClick={downloadPdf}>
+                <FileDown size={17} />
+                PDF
               </button>
             </div>
           </div>
