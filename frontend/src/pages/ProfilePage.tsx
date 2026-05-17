@@ -1,4 +1,4 @@
-import { Music, Plus, Star, Trash2, UserRound, X } from "lucide-react";
+import { ChevronDown, Music, Plus, Star, Trash2, UserRound, X } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { getPublicUser } from "../api/authApi";
@@ -10,7 +10,8 @@ import {
   listFavoriteTabs,
   listPlaylists,
   listSavedPlaylists,
-  listTabs
+  listTabs,
+  removeTabFromPlaylist
 } from "../api/tabeeApi";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { getCurrentUser } from "../api/authSession";
@@ -28,7 +29,11 @@ export function ProfilePage() {
   const [savedPlaylists, setSavedPlaylists] = useState<PlaylistResponse[]>([]);
   const [playlistLayer, setPlaylistLayer] = useState<"created" | "saved">("created");
   const [tabLayer, setTabLayer] = useState<"created" | "favorited">("created");
+  const [playlistLayerOpen, setPlaylistLayerOpen] = useState(false);
+  const [tabLayerOpen, setTabLayerOpen] = useState(false);
+  const [expandedTabId, setExpandedTabId] = useState("");
   const [selectedPlaylists, setSelectedPlaylists] = useState<Record<string, string>>({});
+  const [selectedRemovalPlaylists, setSelectedRemovalPlaylists] = useState<Record<string, string>>({});
   const [playlistName, setPlaylistName] = useState("");
   const [playlistDescription, setPlaylistDescription] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
@@ -108,6 +113,33 @@ export function ProfilePage() {
     }
   }
 
+  async function removeFromPlaylist(tabId: string) {
+    const containingPlaylists = playlists.filter((playlist) =>
+      playlist.tabs.some((playlistTab) => String(playlistTab.tabId) === tabId)
+    );
+    const playlistId = selectedRemovalPlaylists[tabId] || String(containingPlaylists[0]?.id || "");
+    if (!playlistId) {
+      setError("This tab is not in a playlist.");
+      return;
+    }
+
+    setSavingTabId(tabId);
+    setError("");
+    try {
+      const playlist = await removeTabFromPlaylist(Number(playlistId), Number(tabId));
+      setPlaylists((current) => current.map((item) => (item.id === playlist.id ? playlist : item)));
+      setSelectedRemovalPlaylists((current) => {
+        const next = { ...current };
+        delete next[tabId];
+        return next;
+      });
+    } catch (caught) {
+      setError(errorMessage(caught, "Could not remove tab from playlist."));
+    } finally {
+      setSavingTabId("");
+    }
+  }
+
   async function submitPlaylist(event: FormEvent) {
     event.preventDefault();
     const name = playlistName.trim();
@@ -178,6 +210,25 @@ export function ProfilePage() {
     }
   }
 
+  function togglePlaylistLayer(nextLayer: "created" | "saved") {
+    if (playlistLayer === nextLayer) {
+      setPlaylistLayerOpen((current) => !current);
+      return;
+    }
+    setPlaylistLayer(nextLayer);
+    setPlaylistLayerOpen(true);
+  }
+
+  function toggleTabLayer(nextLayer: "created" | "favorited") {
+    if (tabLayer === nextLayer) {
+      setTabLayerOpen((current) => !current);
+      return;
+    }
+    setTabLayer(nextLayer);
+    setTabLayerOpen(true);
+    setExpandedTabId("");
+  }
+
   return (
     <main className="profile-page">
       <section className="profile-hero">
@@ -241,23 +292,27 @@ export function ProfilePage() {
           <div className="playlist-layer-grid">
             <button
               className={`playlist-layer-card${playlistLayer === "created" ? " active" : ""}`}
-              onClick={() => setPlaylistLayer("created")}
+              aria-expanded={playlistLayer === "created" && playlistLayerOpen}
+              onClick={() => togglePlaylistLayer("created")}
             >
               <span>Created playlists</span>
               <strong>{playlists.length}</strong>
               <small>Playlists you own and manage</small>
+              <ChevronDown size={17} />
             </button>
             <button
               className={`playlist-layer-card${playlistLayer === "saved" ? " active" : ""}`}
-              onClick={() => setPlaylistLayer("saved")}
+              aria-expanded={playlistLayer === "saved" && playlistLayerOpen}
+              onClick={() => togglePlaylistLayer("saved")}
             >
               <span>Saved playlists</span>
               <strong>{savedPlaylists.length}</strong>
               <small>Playlists you saved from others</small>
+              <ChevronDown size={17} />
             </button>
           </div>
 
-          <div className="playlist-layer-content">
+          {playlistLayerOpen ? <div className="playlist-layer-content">
             <div className="section-header compact-header">
               <div>
                 <h2>{playlistLayer === "created" ? "Created playlists" : "Saved playlists"}</h2>
@@ -310,7 +365,7 @@ export function ProfilePage() {
                 <p>Use Discovery to save playlists created by other people.</p>
               </div>
             ) : null}
-          </div>
+          </div> : null}
         </div>
 
         <div className="profile-panel">
@@ -325,23 +380,27 @@ export function ProfilePage() {
           <div className="playlist-layer-grid">
             <button
               className={`playlist-layer-card${tabLayer === "created" ? " active" : ""}`}
-              onClick={() => setTabLayer("created")}
+              aria-expanded={tabLayer === "created" && tabLayerOpen}
+              onClick={() => toggleTabLayer("created")}
             >
               <span>Created tabs</span>
               <strong>{tabs.length}</strong>
               <small>{unplaylistedTabs.length} still waiting for a playlist</small>
+              <ChevronDown size={17} />
             </button>
             <button
               className={`playlist-layer-card${tabLayer === "favorited" ? " active" : ""}`}
-              onClick={() => setTabLayer("favorited")}
+              aria-expanded={tabLayer === "favorited" && tabLayerOpen}
+              onClick={() => toggleTabLayer("favorited")}
             >
               <span>Favorited tabs</span>
               <strong>{favoriteTabs.length}</strong>
               <small>Tabs you liked from other users</small>
+              <ChevronDown size={17} />
             </button>
           </div>
 
-          <div className="playlist-layer-content">
+          {tabLayerOpen ? <div className="playlist-layer-content">
             <div className="section-header compact-header">
               <div>
                 <h2>{tabLayer === "created" ? "Created tabs" : "Favorited tabs"}</h2>
@@ -355,20 +414,61 @@ export function ProfilePage() {
             </div>
 
           <div className="profile-list">
-            {(tabLayer === "created" ? tabs : favoriteTabs).map((tab) => (
-              <article className="profile-tab-row" key={tab.id}>
-                <Link to={`/tabs/${tab.id}`}>
-                  <span>{tab.title}</span>
-                  <small>
-                    {tabLayer === "created"
-                      ? `${tab.fileName} / ${tab.instrument}`
-                      : `by ${tab.ownerUsername} / ${tab.artist || tab.instrument}`}
-                  </small>
-                </Link>
+            {(tabLayer === "created" ? tabs : favoriteTabs).map((tab) => {
+              const containingPlaylists = playlists.filter((playlist) =>
+                playlist.tabs.some((playlistTab) => String(playlistTab.tabId) === tab.id)
+              );
+              const selectedRemovalPlaylistId = selectedRemovalPlaylists[tab.id] || String(containingPlaylists[0]?.id || "");
+
+              return (
+              <article className={`profile-tab-row${expandedTabId === tab.id ? " expanded" : ""}`} key={tab.id}>
+                <div className="profile-tab-main">
+                  <Link to={`/tabs/${tab.id}`}>
+                    <span>{tab.title}</span>
+                    <small>
+                      {tabLayer === "created"
+                        ? `${tab.fileName} / ${tab.instrument}`
+                        : `by ${tab.ownerUsername} / ${tab.artist || tab.instrument}`}
+                    </small>
+                  </Link>
+                  {tabLayer === "created" ? (
+                    <button
+                      className="icon-btn subtle"
+                      title="Manage tab"
+                      aria-expanded={expandedTabId === tab.id}
+                      onClick={() => setExpandedTabId((current) => (current === tab.id ? "" : tab.id))}
+                    >
+                      <ChevronDown size={17} />
+                    </button>
+                  ) : (
+                    <Star className="favorite-inline-icon" size={18} />
+                  )}
+                </div>
                 {tabLayer === "created" ? (
-                  <div className="profile-row-actions">
-                    {playlistTabIds.has(tab.id) ? (
-                      <span className="status-chip">In playlist</span>
+                  expandedTabId === tab.id ? <div className="profile-row-actions profile-tab-actions">
+                    {containingPlaylists.length ? (
+                      <>
+                        <select
+                          value={selectedRemovalPlaylistId}
+                          onChange={(event) =>
+                            setSelectedRemovalPlaylists((current) => ({ ...current, [tab.id]: event.target.value }))
+                          }
+                        >
+                          {containingPlaylists.map((playlist) => (
+                            <option key={playlist.id} value={playlist.id}>
+                              {playlist.name}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          className="icon-btn subtle danger"
+                          title="Remove from playlist"
+                          disabled={savingTabId === tab.id}
+                          onClick={() => removeFromPlaylist(tab.id)}
+                        >
+                          <X size={17} />
+                        </button>
+                      </>
                     ) : (
                       <>
                         <select
@@ -403,12 +503,11 @@ export function ProfilePage() {
                     >
                       <Trash2 size={17} />
                     </button>
-                  </div>
-                ) : (
-                  <Star className="favorite-inline-icon" size={18} />
-                )}
+                  </div> : null
+                ) : null}
               </article>
-            ))}
+              );
+            })}
           </div>
 
           {!loading && tabLayer === "created" && !tabs.length ? (
@@ -424,7 +523,7 @@ export function ProfilePage() {
               <p>Open tabs from Search or Discovery and favorite the ones you want to keep.</p>
             </div>
           ) : null}
-          </div>
+          </div> : null}
         </div>
 
       </section>

@@ -13,6 +13,8 @@ public interface FavoriteTabRepository extends JpaRepository<FavoriteTab, Favori
 
     boolean existsByUser_IdAndTab_Id(Long userId, Long tabId);
 
+    long countByTab_Id(Long tabId);
+
     @Query("select favorite.id.tabId from FavoriteTab favorite where favorite.user.id = :userId")
     List<Long> findTabIdsByUserId(@Param("userId") Long userId);
 }

@@ -169,7 +169,8 @@ function toGeneratedTab(tab: TabResponse, uploadedFileName = "uploaded-audio", p
     tempo: tab.estimatedTempo ?? jsonData.estimatedTempo ?? null,
     createdAt: new Date(tab.createdAt).toLocaleString(),
     createdByCurrentUser: tab.createdByCurrentUser,
-    favoritedByCurrentUser: tab.favoritedByCurrentUser
+    favoritedByCurrentUser: tab.favoritedByCurrentUser,
+    favoriteCount: tab.favoriteCount
   };
 }
 

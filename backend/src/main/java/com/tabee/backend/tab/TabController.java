@@ -43,7 +43,7 @@ public class TabController {
     public List<TabResponse> findMine(@AuthenticationPrincipal User currentUser) {
         User current = this.currentUser.require(currentUser);
         return tabService.findByOwner(current).stream()
-                .map(tab -> TabResponse.from(tab, current.getId(), false))
+                .map(tab -> TabResponse.from(tab, current.getId(), false, tabService.countFavorites(tab.getId())))
                 .toList();
     }
 
@@ -52,28 +52,28 @@ public class TabController {
         User current = this.currentUser.require(currentUser);
         Set<Long> favoriteTabIds = tabService.findFavoriteTabIds(current);
         return tabService.findPublicTabs().stream()
-                .map(tab -> TabResponse.from(tab, current.getId(), favoriteTabIds.contains(tab.getId())))
+                .map(tab -> TabResponse.from(tab, current.getId(), favoriteTabIds.contains(tab.getId()), tabService.countFavorites(tab.getId())))
                 .toList();
     }
 
     @GetMapping("/public/{id}")
     public TabResponse findPublicById(@AuthenticationPrincipal User currentUser, @PathVariable Long id) {
         User current = this.currentUser.require(currentUser);
-        return TabResponse.from(tabService.findById(id), current.getId(), tabService.isFavoritedBy(current, id));
+        return TabResponse.from(tabService.findById(id), current.getId(), tabService.isFavoritedBy(current, id), tabService.countFavorites(id));
     }
 
     @GetMapping("/favorites")
     public List<TabResponse> findFavorites(@AuthenticationPrincipal User currentUser) {
         User current = this.currentUser.require(currentUser);
         return tabService.findFavorites(current).stream()
-                .map(favorite -> TabResponse.from(favorite.getTab(), current.getId(), true))
+                .map(favorite -> TabResponse.from(favorite.getTab(), current.getId(), true, tabService.countFavorites(favorite.getTab().getId())))
                 .toList();
     }
 
     @GetMapping("/{id}")
     public TabResponse findById(@AuthenticationPrincipal User currentUser, @PathVariable Long id) {
         User current = this.currentUser.require(currentUser);
-        return TabResponse.from(tabService.findByOwnerAndId(current, id), current.getId(), false);
+        return TabResponse.from(tabService.findByOwnerAndId(current, id), current.getId(), false, tabService.countFavorites(id));
     }
 
     @GetMapping("/{id}/audio")
@@ -96,26 +96,27 @@ public class TabController {
     @ResponseStatus(HttpStatus.CREATED)
     public TabResponse create(@AuthenticationPrincipal User currentUser, @Valid @RequestBody TabRequest request) {
         User current = this.currentUser.require(currentUser);
-        return TabResponse.from(tabService.create(current, request), current.getId(), false);
+        Tab tab = tabService.create(current, request);
+        return TabResponse.from(tab, current.getId(), false, tabService.countFavorites(tab.getId()));
     }
 
     @PutMapping("/{id}")
     public TabResponse update(@AuthenticationPrincipal User currentUser, @PathVariable Long id,
                               @Valid @RequestBody TabUpdateRequest request) {
         User current = this.currentUser.require(currentUser);
-        return TabResponse.from(tabService.update(current, id, request), current.getId(), false);
+        return TabResponse.from(tabService.update(current, id, request), current.getId(), false, tabService.countFavorites(id));
     }
 
     @PostMapping("/{id}/favorite")
     public TabResponse favoriteTab(@AuthenticationPrincipal User currentUser, @PathVariable Long id) {
         User current = this.currentUser.require(currentUser);
-        return TabResponse.from(tabService.favoriteTab(current, id), current.getId(), true);
+        return TabResponse.from(tabService.favoriteTab(current, id), current.getId(), true, tabService.countFavorites(id));
     }
 
     @DeleteMapping("/{id}/favorite")
     public TabResponse unfavoriteTab(@AuthenticationPrincipal User currentUser, @PathVariable Long id) {
         User current = this.currentUser.require(currentUser);
-        return TabResponse.from(tabService.unfavoriteTab(current, id), current.getId(), false);
+        return TabResponse.from(tabService.unfavoriteTab(current, id), current.getId(), false, tabService.countFavorites(id));
     }
 
     @DeleteMapping("/{id}")

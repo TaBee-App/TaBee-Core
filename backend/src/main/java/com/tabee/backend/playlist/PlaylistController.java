@@ -37,7 +37,7 @@ public class PlaylistController {
     public List<PlaylistResponse> findMine(@AuthenticationPrincipal User user) {
         User current = currentUser.require(user);
         return playlistService.findMine(current).stream()
-                .map(playlist -> PlaylistResponse.from(playlist, current.getId(), false))
+                .map(playlist -> PlaylistResponse.from(playlist, current.getId(), false, playlistService.countSaves(playlist.getId())))
                 .toList();
     }
 
@@ -48,7 +48,8 @@ public class PlaylistController {
                 .map(playlist -> PlaylistResponse.from(
                         playlist,
                         current.getId(),
-                        playlistService.isSavedBy(current, playlist.getId())
+                        playlistService.isSavedBy(current, playlist.getId()),
+                        playlistService.countSaves(playlist.getId())
                 ))
                 .toList();
     }
@@ -57,7 +58,7 @@ public class PlaylistController {
     public List<PlaylistResponse> findSaved(@AuthenticationPrincipal User user) {
         User current = currentUser.require(user);
         return playlistService.findSaved(current).stream()
-                .map(saved -> PlaylistResponse.from(saved.getPlaylist(), current.getId(), true))
+                .map(saved -> PlaylistResponse.from(saved.getPlaylist(), current.getId(), true, playlistService.countSaves(saved.getPlaylist().getId())))
                 .toList();
     }
 
@@ -67,7 +68,8 @@ public class PlaylistController {
         return PlaylistResponse.from(
                 playlistService.findPublicById(id),
                 current.getId(),
-                playlistService.isSavedBy(current, id)
+                playlistService.isSavedBy(current, id),
+                playlistService.countSaves(id)
         );
     }
 
@@ -75,14 +77,15 @@ public class PlaylistController {
     @ResponseStatus(HttpStatus.CREATED)
     public PlaylistResponse create(@AuthenticationPrincipal User user, @Valid @RequestBody PlaylistRequest request) {
         User current = currentUser.require(user);
-        return PlaylistResponse.from(playlistService.create(current, request), current.getId(), false);
+        UserPlaylist playlist = playlistService.create(current, request);
+        return PlaylistResponse.from(playlist, current.getId(), false, playlistService.countSaves(playlist.getId()));
     }
 
     @PutMapping("/{id}")
     public PlaylistResponse update(@AuthenticationPrincipal User user, @PathVariable Long id,
                                    @Valid @RequestBody PlaylistRequest request) {
         User current = currentUser.require(user);
-        return PlaylistResponse.from(playlistService.update(current, id, request), current.getId(), false);
+        return PlaylistResponse.from(playlistService.update(current, id, request), current.getId(), false, playlistService.countSaves(id));
     }
 
     @DeleteMapping("/{id}")
@@ -95,25 +98,25 @@ public class PlaylistController {
     public PlaylistResponse addTab(@AuthenticationPrincipal User user, @PathVariable Long id,
                                    @Valid @RequestBody AddTabRequest request) {
         User current = currentUser.require(user);
-        return PlaylistResponse.from(playlistService.addTab(current, id, request.tabId()), current.getId(), false);
+        return PlaylistResponse.from(playlistService.addTab(current, id, request.tabId()), current.getId(), false, playlistService.countSaves(id));
     }
 
     @DeleteMapping("/{playlistId}/tabs/{tabId}")
     public PlaylistResponse removeTab(@AuthenticationPrincipal User user, @PathVariable Long playlistId,
                                       @PathVariable Long tabId) {
         User current = currentUser.require(user);
-        return PlaylistResponse.from(playlistService.removeTab(current, playlistId, tabId), current.getId(), false);
+        return PlaylistResponse.from(playlistService.removeTab(current, playlistId, tabId), current.getId(), false, playlistService.countSaves(playlistId));
     }
 
     @PostMapping("/{id}/save")
     public PlaylistResponse savePlaylist(@AuthenticationPrincipal User user, @PathVariable Long id) {
         User current = currentUser.require(user);
-        return PlaylistResponse.from(playlistService.savePlaylist(current, id), current.getId(), true);
+        return PlaylistResponse.from(playlistService.savePlaylist(current, id), current.getId(), true, playlistService.countSaves(id));
     }
 
     @DeleteMapping("/{id}/save")
     public PlaylistResponse unsavePlaylist(@AuthenticationPrincipal User user, @PathVariable Long id) {
         User current = currentUser.require(user);
-        return PlaylistResponse.from(playlistService.unsavePlaylist(current, id), current.getId(), false);
+        return PlaylistResponse.from(playlistService.unsavePlaylist(current, id), current.getId(), false, playlistService.countSaves(id));
     }
 }

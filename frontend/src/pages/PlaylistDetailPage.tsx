@@ -119,6 +119,13 @@ export function PlaylistDetailPage() {
             ) : null}
             {playlist.description || `${playlist.tabs.length} tabs in this playlist`}
           </p>
+          <div className="detail-stat-row">
+            <span className="favorite-count-pill">
+              <Star size={15} />
+              {formatSaveCount(playlist.savedCount || 0)}
+            </span>
+            <span className="favorite-count-pill">Created {formatPlaylistDate(playlist.createdAt)}</span>
+          </div>
         </div>
         {!playlist.createdByCurrentUser ? (
           <button className={`btn ${playlist.savedByCurrentUser ? "ghost" : "primary"}`} onClick={toggleSave}>
@@ -187,4 +194,14 @@ export function PlaylistDetailPage() {
       ) : null}
     </main>
   );
+}
+
+function formatPlaylistDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+}
+
+function formatSaveCount(count: number) {
+  return `${count} ${count === 1 ? "Save" : "Saves"}`;
 }

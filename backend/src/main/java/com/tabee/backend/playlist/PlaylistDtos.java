@@ -49,13 +49,18 @@ public final class PlaylistDtos {
             OffsetDateTime createdAt,
             boolean createdByCurrentUser,
             boolean savedByCurrentUser,
+            long savedCount,
             List<PlaylistTabResponse> tabs
     ) {
         public static PlaylistResponse from(UserPlaylist playlist) {
-            return from(playlist, null, false);
+            return from(playlist, null, false, 0);
         }
 
         public static PlaylistResponse from(UserPlaylist playlist, Long currentUserId, boolean savedByCurrentUser) {
+            return from(playlist, currentUserId, savedByCurrentUser, 0);
+        }
+
+        public static PlaylistResponse from(UserPlaylist playlist, Long currentUserId, boolean savedByCurrentUser, long savedCount) {
             boolean createdByCurrentUser = currentUserId != null && playlist.getOwner().getId().equals(currentUserId);
             return new PlaylistResponse(
                     playlist.getId(),
@@ -66,6 +71,7 @@ public final class PlaylistDtos {
                     playlist.getCreatedAt(),
                     createdByCurrentUser,
                     savedByCurrentUser,
+                    savedCount,
                     playlist.getPlaylistTabs().stream().map(PlaylistTabResponse::from).toList()
             );
         }

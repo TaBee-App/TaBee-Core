@@ -61,6 +61,11 @@ public class PlaylistService {
     }
 
     @Transactional(readOnly = true)
+    public long countSaves(Long playlistId) {
+        return savedPlaylistRepository.countByPlaylist_Id(playlistId);
+    }
+
+    @Transactional(readOnly = true)
     public UserPlaylist findById(User owner, Long id) {
         return playlistRepository.findByIdAndOwnerId(id, owner.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Playlist not found"));

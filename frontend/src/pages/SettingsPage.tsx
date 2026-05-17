@@ -1,4 +1,4 @@
-import { Moon, Save, Sun, Trash2 } from "lucide-react";
+import { ChevronDown, Moon, Save, Sun, Trash2 } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { deleteMe, updateMe } from "../api/authApi";
@@ -22,11 +22,13 @@ export function SettingsPage() {
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileError, setProfileError] = useState("");
   const [profileSaved, setProfileSaved] = useState(false);
+  const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [deletePassword, setDeletePassword] = useState("");
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [deleteError, setDeleteError] = useState("");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
   const newPasswordRules = passwordRules(profileForm.password, {
     username: profileForm.username,
     email: profileForm.email,
@@ -144,114 +146,133 @@ export function SettingsPage() {
           </div>
         </div>
 
-        <form className="settings-form-panel" onSubmit={submitProfile}>
-          <div className="section-header">
-            <div>
-              <h2>Edit profile</h2>
-              <p>Current password is required before saving account changes.</p>
-            </div>
-          </div>
-
-          {profileError ? <div className="form-error">{profileError}</div> : null}
-          {profileSaved ? <div className="form-success">Profile updated.</div> : null}
-
-          <div className="settings-form-grid">
-            <label className="field">
-              <span>Username</span>
-              <input
-                value={profileForm.username}
-                onChange={(event) => setProfileForm((current) => ({ ...current, username: event.target.value }))}
-              />
-            </label>
-            <label className="field">
-              <span>Email</span>
-              <input
-                type="email"
-                value={profileForm.email}
-                onChange={(event) => setProfileForm((current) => ({ ...current, email: event.target.value }))}
-              />
-            </label>
-          </div>
-
-          <label className="field">
-            <span>Full name</span>
-            <input
-              value={profileForm.fullName}
-              onChange={(event) => setProfileForm((current) => ({ ...current, fullName: event.target.value }))}
-            />
-          </label>
-
-          <div className="settings-form-grid">
-            <label className="field">
-              <span>Current password</span>
-              <input
-                type="password"
-                value={profileForm.currentPassword}
-                placeholder="Required to save changes"
-                onChange={(event) =>
-                  setProfileForm((current) => ({ ...current, currentPassword: event.target.value }))
-                }
-              />
-            </label>
-            <label className="field">
-              <span>New password</span>
-              <input
-                type="password"
-                value={profileForm.password}
-                placeholder="Leave blank to keep current password"
-                minLength={8}
-                onChange={(event) => setProfileForm((current) => ({ ...current, password: event.target.value }))}
-              />
-            </label>
-          </div>
-
-          {profileForm.password ? (
-            <ul className="password-rules">
-              {newPasswordRules.map((rule) => (
-                <li className={rule.passed ? "passed" : ""} key={rule.id}>
-                  {rule.label}
-                </li>
-              ))}
-            </ul>
-          ) : null}
-
-          <button className="btn primary" disabled={savingProfile} type="submit">
-            <Save size={18} />
-            {savingProfile ? "Saving..." : "Save profile"}
-          </button>
-        </form>
-
-        <div className="setting-row danger-zone">
-          <div>
-            <strong>Delete account</strong>
+        <section className={`settings-accordion${editProfileOpen ? " open" : ""}`}>
+          <button
+            className="settings-accordion-trigger"
+            type="button"
+            aria-expanded={editProfileOpen}
+            onClick={() => setEditProfileOpen((current) => !current)}
+          >
             <span>
-              Permanently removes your profile, tabs, playlists, follows, saved playlists, and favorites.
+              <strong>Edit profile</strong>
+              <small>Update username, email, display name, or password.</small>
             </span>
-          </div>
-          <div className="danger-form">
-            {deleteError ? <div className="form-error">{deleteError}</div> : null}
-            <label className="field">
-              <span>Current password</span>
-              <input
-                type="password"
-                value={deletePassword}
-                onChange={(event) => setDeletePassword(event.target.value)}
-              />
-            </label>
-            <label className="field">
-              <span>Confirmation</span>
-              <input
-                value={deleteConfirmation}
-                placeholder="delete my account"
-                onChange={(event) => setDeleteConfirmation(event.target.value)}
-              />
-            </label>
-            <button className="btn ghost danger" disabled={deletingAccount} onClick={requestDeleteAccount}>
-              <Trash2 size={18} />
-              {deletingAccount ? "Deleting..." : "Delete account"}
-            </button>
-          </div>
-        </div>
+            <ChevronDown size={18} />
+          </button>
+
+          {editProfileOpen ? (
+            <form className="settings-form-panel" onSubmit={submitProfile}>
+              {profileError ? <div className="form-error">{profileError}</div> : null}
+              {profileSaved ? <div className="form-success">Profile updated.</div> : null}
+
+              <div className="settings-form-grid">
+                <label className="field">
+                  <span>Username</span>
+                  <input
+                    value={profileForm.username}
+                    onChange={(event) => setProfileForm((current) => ({ ...current, username: event.target.value }))}
+                  />
+                </label>
+                <label className="field">
+                  <span>Email</span>
+                  <input
+                    type="email"
+                    value={profileForm.email}
+                    onChange={(event) => setProfileForm((current) => ({ ...current, email: event.target.value }))}
+                  />
+                </label>
+              </div>
+
+              <label className="field">
+                <span>Full name</span>
+                <input
+                  value={profileForm.fullName}
+                  onChange={(event) => setProfileForm((current) => ({ ...current, fullName: event.target.value }))}
+                />
+              </label>
+
+              <div className="settings-form-grid">
+                <label className="field">
+                  <span>Current password</span>
+                  <input
+                    type="password"
+                    value={profileForm.currentPassword}
+                    placeholder="Required to save changes"
+                    onChange={(event) =>
+                      setProfileForm((current) => ({ ...current, currentPassword: event.target.value }))
+                    }
+                  />
+                </label>
+                <label className="field">
+                  <span>New password</span>
+                  <input
+                    type="password"
+                    value={profileForm.password}
+                    placeholder="Leave blank to keep current password"
+                    minLength={8}
+                    onChange={(event) => setProfileForm((current) => ({ ...current, password: event.target.value }))}
+                  />
+                </label>
+              </div>
+
+              {profileForm.password ? (
+                <ul className="password-rules">
+                  {newPasswordRules.map((rule) => (
+                    <li className={rule.passed ? "passed" : ""} key={rule.id}>
+                      {rule.label}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+
+              <button className="btn primary" disabled={savingProfile} type="submit">
+                <Save size={18} />
+                {savingProfile ? "Saving..." : "Save profile"}
+              </button>
+            </form>
+          ) : null}
+        </section>
+
+        <section className={`settings-accordion danger-accordion${deleteAccountOpen ? " open" : ""}`}>
+          <button
+            className="settings-accordion-trigger"
+            type="button"
+            aria-expanded={deleteAccountOpen}
+            onClick={() => setDeleteAccountOpen((current) => !current)}
+          >
+            <span>
+              <strong>Delete account</strong>
+              <small>Permanently removes your profile, tabs, playlists, follows, saved playlists, and favorites.</small>
+            </span>
+            <ChevronDown size={18} />
+          </button>
+
+          {deleteAccountOpen ? (
+            <div className="danger-form">
+              {deleteError ? <div className="form-error">{deleteError}</div> : null}
+              <label className="field">
+                <span>Password</span>
+                <input
+                  type="password"
+                  value={deletePassword}
+                  onChange={(event) => setDeletePassword(event.target.value)}
+                />
+              </label>
+              <label className="field">
+                <span>Confirmation</span>
+                <input
+                  value={deleteConfirmation}
+                  placeholder="delete my account"
+                  onChange={(event) => setDeleteConfirmation(event.target.value)}
+                />
+              </label>
+              <button className="btn ghost danger" disabled={deletingAccount} onClick={requestDeleteAccount}>
+                <Trash2 size={18} />
+                {deletingAccount ? "Deleting..." : "Delete account"}
+              </button>
+            </div>
+          ) : null}
+        </section>
       </section>
       {deleteConfirmOpen ? (
         <ConfirmDialog

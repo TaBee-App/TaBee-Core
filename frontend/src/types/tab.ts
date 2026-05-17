@@ -15,6 +15,7 @@ export interface GeneratedTab {
   createdAt: string;
   createdByCurrentUser?: boolean;
   favoritedByCurrentUser?: boolean;
+  favoriteCount?: number;
 }
 
 export interface GenerateTabRequest {
@@ -71,6 +72,7 @@ export interface TabResponse {
   updatedAt: string;
   createdByCurrentUser: boolean;
   favoritedByCurrentUser: boolean;
+  favoriteCount: number;
   jsonData: GeneratedTabJson;
 }
 
@@ -104,6 +106,7 @@ export interface PlaylistResponse {
   createdAt: string;
   createdByCurrentUser: boolean;
   savedByCurrentUser: boolean;
+  savedCount: number;
   tabs: PlaylistTabResponse[];
 }
 

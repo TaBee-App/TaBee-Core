@@ -1,4 +1,4 @@
-import { FilePlus2, Music, Search, Trash2 } from "lucide-react";
+import { ChevronDown, FilePlus2, Music, Search, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { listTabs } from "../api/tabeeApi";
@@ -12,6 +12,7 @@ export function DashboardPage() {
   const [tabs, setTabs] = useState(loadTabs);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [recentsOpen, setRecentsOpen] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -85,50 +86,67 @@ export function DashboardPage() {
       </section>
 
       <section className="library-panel">
-        <div className="section-header">
-          <div>
-            <h2>Recent tabs</h2>
-            <p>{loading ? "Loading backend tabs..." : `${tabs.length} available in your library`}</p>
+        <div className={`recent-tabs-accordion${recentsOpen ? " open" : ""}`}>
+          <div className="recent-tabs-trigger-row">
+            <button
+              className="search-section-trigger"
+              type="button"
+              aria-expanded={recentsOpen}
+              onClick={() => setRecentsOpen((current) => !current)}
+            >
+              <span className="search-section-icon">
+                <Music size={18} />
+              </span>
+              <span>
+                <h2>Recent tabs</h2>
+                <p>{loading ? "Loading backend tabs..." : `${tabs.length} available in your library`}</p>
+              </span>
+              <ChevronDown size={18} />
+            </button>
+            <button className="btn ghost" onClick={clearRecents} disabled={!tabs.length} title="Hide all recent tabs">
+              <Trash2 size={17} />
+              Clear recents
+            </button>
           </div>
-          <button className="btn ghost" onClick={clearRecents} disabled={!tabs.length} title="Hide all recent tabs">
-            <Trash2 size={17} />
-            Clear recents
-          </button>
+
+          {recentsOpen ? (
+            <>
+              <label className="search-box">
+                <Search size={17} />
+                <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search title, file, or instrument" />
+              </label>
+
+              {error ? <div className="form-error">{error}</div> : null}
+
+              <div className="tab-list">
+                {filteredTabs.map((tab) => (
+                  <article className="tab-card" key={tab.id}>
+                    <Link to={`/tabs/${tab.id}`}>
+                      <span className="tab-card-title">{tab.title}</span>
+                      <span className="tab-card-meta">
+                        {tab.fileName} / {tab.instrument} / {tab.createdAt}
+                      </span>
+                    </Link>
+                    <button
+                      className="icon-btn subtle"
+                      title="Remove from recents"
+                      onClick={() => removeFromRecents(tab.id)}
+                    >
+                      <Trash2 size={17} />
+                    </button>
+                  </article>
+                ))}
+              </div>
+
+              {!filteredTabs.length ? (
+                <div className="empty-panel">
+                  <h3>No tabs yet</h3>
+                  <p>Generate a tab or open the demo to see the viewer and playback controls.</p>
+                </div>
+              ) : null}
+            </>
+          ) : null}
         </div>
-
-        <label className="search-box">
-          <Search size={17} />
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search title, file, or instrument" />
-        </label>
-
-        {error ? <div className="form-error">{error}</div> : null}
-
-        <div className="tab-list">
-          {filteredTabs.map((tab) => (
-            <article className="tab-card" key={tab.id}>
-              <Link to={`/tabs/${tab.id}`}>
-                <span className="tab-card-title">{tab.title}</span>
-                <span className="tab-card-meta">
-                  {tab.fileName} / {tab.instrument} / {tab.createdAt}
-                </span>
-              </Link>
-              <button
-                className="icon-btn subtle"
-                title="Remove from recents"
-                onClick={() => removeFromRecents(tab.id)}
-              >
-                <Trash2 size={17} />
-              </button>
-            </article>
-          ))}
-        </div>
-
-        {!filteredTabs.length ? (
-          <div className="empty-panel">
-            <h3>No tabs yet</h3>
-            <p>Generate a tab or open the demo to see the viewer and playback controls.</p>
-          </div>
-        ) : null}
       </section>
 
     </main>

@@ -98,6 +98,11 @@ public class TabService {
         return favoriteTabRepository.existsByUser_IdAndTab_Id(user.getId(), tabId);
     }
 
+    @Transactional(readOnly = true)
+    public long countFavorites(Long tabId) {
+        return favoriteTabRepository.countByTab_Id(tabId);
+    }
+
     @Transactional
     public Tab favoriteTab(User user, Long tabId) {
         Tab tab = findById(tabId);

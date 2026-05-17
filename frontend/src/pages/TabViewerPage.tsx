@@ -322,6 +322,10 @@ export function TabViewerPage() {
                       Created by @{tab.ownerUsername}
                     </Link>
                   ) : null}
+                  <span className="favorite-count-pill">
+                    <Star size={15} />
+                    {formatFavoriteCount(tab.favoriteCount || 0)}
+                  </span>
                 </>
               )}
             </div>
@@ -457,4 +461,8 @@ function toMetadataForm(tab: GeneratedTab) {
 function nullableText(value: string) {
   const trimmed = value.trim();
   return trimmed || null;
+}
+
+function formatFavoriteCount(count: number) {
+  return `${count} ${count === 1 ? "Favorite" : "Favorites"}`;
 }

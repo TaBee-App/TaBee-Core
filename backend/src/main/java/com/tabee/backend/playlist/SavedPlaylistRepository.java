@@ -10,4 +10,6 @@ public interface SavedPlaylistRepository extends JpaRepository<SavedPlaylist, Sa
     List<SavedPlaylist> findByUser_IdOrderBySavedAtDesc(Long userId);
 
     boolean existsByUser_IdAndPlaylist_Id(Long userId, Long playlistId);
+
+    long countByPlaylist_Id(Long playlistId);
 }

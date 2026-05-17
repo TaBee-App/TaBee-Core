@@ -1,4 +1,4 @@
-import { ListMusic, Music, Search, UserRound } from "lucide-react";
+import { ChevronDown, ListMusic, Music, Search, UserRound } from "lucide-react";
 import type React from "react";
 import type { FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
@@ -20,6 +20,12 @@ export function SearchPage() {
   const [loading, setLoading] = useState(true);
   const [searchingUsers, setSearchingUsers] = useState(false);
   const [submittedQuery, setSubmittedQuery] = useState("");
+  const [openSections, setOpenSections] = useState<Record<SearchScope, boolean>>({
+    all: false,
+    tabs: false,
+    playlists: false,
+    users: false
+  });
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -109,6 +115,16 @@ export function SearchPage() {
   function submitSearch(event: FormEvent) {
     event.preventDefault();
     setSubmittedQuery(query.trim());
+    setOpenSections(defaultOpenSections(scope));
+  }
+
+  function changeScope(nextScope: SearchScope) {
+    setScope(nextScope);
+    setOpenSections(defaultOpenSections(nextScope));
+  }
+
+  function toggleSection(section: SearchScope) {
+    setOpenSections((current) => ({ ...current, [section]: !current[section] }));
   }
 
   return (
@@ -137,7 +153,7 @@ export function SearchPage() {
 
         <div className="archive-tabs">
           {(["all", "tabs", "playlists", "users"] as SearchScope[]).map((nextScope) => (
-            <button key={nextScope} className={scope === nextScope ? "active" : ""} onClick={() => setScope(nextScope)}>
+            <button key={nextScope} className={scope === nextScope ? "active" : ""} onClick={() => changeScope(nextScope)}>
               {nextScope === "tabs" ? <Music size={17} /> : nextScope === "playlists" ? <ListMusic size={17} /> : nextScope === "users" ? <UserRound size={17} /> : <Search size={17} />}
               {labelForScope(nextScope)}
             </button>
@@ -154,9 +170,17 @@ export function SearchPage() {
         ) : null}
 
         {hasSearched && showTabs ? (
-          <SearchSection title="Tabs" count={filteredTabs.length} loading={loading}>
+          <SearchSection
+            title="Tabs"
+            count={filteredTabs.length}
+            loading={loading}
+            open={openSections.tabs}
+            tone="tabs"
+            icon={<Music size={18} />}
+            onToggle={() => toggleSection("tabs")}
+          >
             {filteredTabs.map((tab) => (
-              <article className="tab-card" key={tab.id}>
+              <article className="tab-card search-result-row tab-result-row" key={tab.id}>
                 <Link to={`/tabs/${tab.id}`}>
                   <span className="tab-card-title">{tab.title}</span>
                   <span className="tab-card-meta">
@@ -169,9 +193,17 @@ export function SearchPage() {
         ) : null}
 
         {hasSearched && showPlaylists ? (
-          <SearchSection title="Playlists" count={filteredPlaylists.length} loading={loading}>
+          <SearchSection
+            title="Playlists"
+            count={filteredPlaylists.length}
+            loading={loading}
+            open={openSections.playlists}
+            tone="playlists"
+            icon={<ListMusic size={18} />}
+            onToggle={() => toggleSection("playlists")}
+          >
             {filteredPlaylists.map((playlist) => (
-              <article className="playlist-card" key={playlist.id}>
+              <article className="playlist-card search-result-row playlist-result-row" key={playlist.id}>
                 <div className="playlist-card-header">
                   <Link to={`/playlists/${playlist.id}`}>
                     <h3>{playlist.name}</h3>
@@ -184,9 +216,17 @@ export function SearchPage() {
         ) : null}
 
         {hasSearched && showUsers ? (
-          <SearchSection title="Users" count={users.length} loading={searchingUsers}>
+          <SearchSection
+            title="Users"
+            count={users.length}
+            loading={searchingUsers}
+            open={openSections.users}
+            tone="users"
+            icon={<UserRound size={18} />}
+            onToggle={() => toggleSection("users")}
+          >
             {users.map((user) => (
-              <article className="profile-user-row" key={user.id}>
+              <article className="profile-user-row search-result-row user-result-row" key={user.id}>
                 <Link to={`/users/${user.id}`}>
                   <span>{user.fullName || user.username}</span>
                   <small>@{user.username} / {user.followerCount} followers / {user.followingCount} following</small>
@@ -207,23 +247,33 @@ function SearchSection({
   title,
   count,
   loading,
+  open,
+  tone,
+  icon,
+  onToggle,
   children
 }: {
   title: string;
   count: number;
   loading: boolean;
+  open: boolean;
+  tone: "tabs" | "playlists" | "users";
+  icon: React.ReactNode;
+  onToggle: () => void;
   children: React.ReactNode;
 }) {
   return (
-    <div className="search-results-section">
-      <div className="section-header">
-        <div>
+    <section className={`search-results-section search-results-${tone}${open ? " open" : ""}`}>
+      <button className="search-section-trigger" type="button" aria-expanded={open} onClick={onToggle}>
+        <span className="search-section-icon">{icon}</span>
+        <span>
           <h2>{title}</h2>
           <p>{loading ? "Loading..." : `${count} results`}</p>
-        </div>
-      </div>
-      <div className="profile-list">{children}</div>
-    </div>
+        </span>
+        <ChevronDown size={18} />
+      </button>
+      {open ? <div className="profile-list">{children}</div> : null}
+    </section>
   );
 }
 
@@ -232,4 +282,13 @@ function labelForScope(scope: SearchScope) {
   if (scope === "playlists") return "Playlists";
   if (scope === "users") return "Users";
   return "All";
+}
+
+function defaultOpenSections(scope: SearchScope): Record<SearchScope, boolean> {
+  return {
+    all: false,
+    tabs: scope === "tabs",
+    playlists: scope === "playlists",
+    users: scope === "users"
+  };
 }
