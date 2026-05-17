@@ -10,6 +10,7 @@ import {
   unfollowUser
 } from "../api/authApi";
 import { getCurrentUser } from "../api/authSession";
+import { errorMessage } from "../lib/errors";
 import type { PublicUserProfile } from "../types/auth";
 
 export function UserConnectionsPage() {
@@ -39,7 +40,7 @@ export function UserConnectionsPage() {
         setUsers(nextUsers);
       } catch (caught) {
         if (active) {
-          setError(caught instanceof Error ? caught.message : "Could not load users.");
+          setError(errorMessage(caught, "Could not load users."));
         }
       } finally {
         if (active) {
@@ -73,7 +74,7 @@ export function UserConnectionsPage() {
           : current
       );
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Could not remove follower.");
+      setError(errorMessage(caught, "Could not remove follower."));
     }
   }
 

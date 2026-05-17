@@ -54,3 +54,8 @@ export interface UserUpdateRequest {
   password?: string;
   fullName?: string;
 }
+
+export interface DeleteAccountRequest {
+  currentPassword: string;
+  confirmation: string;
+}

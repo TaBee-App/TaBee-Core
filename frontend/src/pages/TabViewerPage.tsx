@@ -12,7 +12,9 @@ import {
   updateGeneratedTab
 } from "../api/tabeeApi";
 import { PlayerBar } from "../components/PlayerBar";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 import { TabRenderer } from "../components/TabRenderer";
+import { errorMessage } from "../lib/errors";
 import { slugify } from "../lib/format";
 import { demoTab } from "../lib/demoTab";
 import { getTab, removeTab, upsertTab } from "../lib/tabStore";
@@ -42,6 +44,8 @@ export function TabViewerPage() {
   const [selectedPlaylistId, setSelectedPlaylistId] = useState("");
   const [playlistSaving, setPlaylistSaving] = useState(false);
   const [favoriteSaving, setFavoriteSaving] = useState(false);
+  const [deletingTab, setDeletingTab] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -83,7 +87,7 @@ export function TabViewerPage() {
       } catch (caught) {
         if (!active) return;
         if (!cachedTab) {
-          setError(caught instanceof Error ? caught.message : "Could not load tab.");
+          setError(errorMessage(caught, "Could not load tab."));
         }
       } finally {
         if (active) {
@@ -190,7 +194,7 @@ export function TabViewerPage() {
       setEditing(false);
       setRenderKey((current) => current + 1);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Could not save tab details.");
+      setError(errorMessage(caught, "Could not save tab details."));
     } finally {
       setSaving(false);
     }
@@ -205,7 +209,7 @@ export function TabViewerPage() {
       const playlist = await addTabToPlaylist(Number(selectedPlaylistId), tab.id);
       setPlaylists((current) => current.map((item) => (item.id === playlist.id ? playlist : item)));
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Could not add tab to playlist.");
+      setError(errorMessage(caught, "Could not add tab to playlist."));
     } finally {
       setPlaylistSaving(false);
     }
@@ -221,7 +225,7 @@ export function TabViewerPage() {
       upsertTab(updatedTab);
       setTab(updatedTab);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Could not update favorite.");
+      setError(errorMessage(caught, "Could not update favorite."));
     } finally {
       setFavoriteSaving(false);
     }
@@ -229,17 +233,18 @@ export function TabViewerPage() {
 
   async function deleteTab() {
     if (!tab || tab.id === "demo" || !tab.createdByCurrentUser) return;
-    if (!window.confirm(`Delete "${tab.title}"? This removes the tab from your account and from playlists.`)) {
-      return;
-    }
 
+    setDeletingTab(true);
     setError("");
     try {
       await deleteGeneratedTab(tab.id);
       removeTab(tab.id);
       navigate("/profile");
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Could not delete tab.");
+      setDeleteConfirmOpen(false);
+      setError(errorMessage(caught, "Could not delete tab."));
+    } finally {
+      setDeletingTab(false);
     }
   }
 
@@ -374,7 +379,12 @@ export function TabViewerPage() {
                       <Pencil size={17} />
                     </button>
                     {tab.createdByCurrentUser ? (
-                      <button className="icon-btn subtle danger" title="Delete tab" onClick={deleteTab}>
+                      <button
+                        className="icon-btn subtle danger"
+                        title="Delete tab"
+                        disabled={deletingTab}
+                        onClick={() => setDeleteConfirmOpen(true)}
+                      >
                         <Trash2 size={17} />
                       </button>
                     ) : null}
@@ -420,6 +430,17 @@ export function TabViewerPage() {
         onAutoScrollChange={setAutoScroll}
         onSpeedChange={setSpeed}
       />
+      {deleteConfirmOpen && tab ? (
+        <ConfirmDialog
+          title="Delete tab?"
+          message={`Delete "${tab.title}"? This removes it from your account and playlists.`}
+          confirmLabel="Delete tab"
+          loading={deletingTab}
+          tone="danger"
+          onCancel={() => setDeleteConfirmOpen(false)}
+          onConfirm={deleteTab}
+        />
+      ) : null}
     </>
   );
 }

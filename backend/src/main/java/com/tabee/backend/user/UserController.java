@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.tabee.backend.security.CurrentUser;
 import com.tabee.backend.user.UserDtos.PublicUserResponse;
+import com.tabee.backend.user.UserDtos.UserDeleteRequest;
 import com.tabee.backend.user.UserDtos.UserResponse;
 import com.tabee.backend.user.UserDtos.UserUpdateRequest;
 
@@ -115,8 +116,8 @@ public class UserController {
 
     @DeleteMapping("/me")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteMe(@AuthenticationPrincipal User user) {
-        userService.delete(currentUser.require(user).getId());
+    public void deleteMe(@AuthenticationPrincipal User user, @Valid @RequestBody UserDeleteRequest request) {
+        userService.delete(currentUser.require(user).getId(), request);
     }
 
     private PublicUserResponse publicUserResponse(User current, User viewed) {

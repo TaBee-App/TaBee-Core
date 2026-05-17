@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { login, register } from "../api/authApi";
 import { isAuthenticated } from "../api/authSession";
+import { errorMessage } from "../lib/errors";
+import { passwordPolicyError, passwordRules } from "../lib/passwordPolicy";
 
 type AuthMode = "login" | "register";
 
@@ -24,8 +26,10 @@ export function AuthPage() {
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const registerPasswordRules = passwordRules(password, { username, email, fullName });
 
   if (isAuthenticated()) {
     return <Navigate to={redirectTo} replace />;
@@ -40,11 +44,22 @@ export function AuthPage() {
       if (mode === "login") {
         await login({ usernameOrEmail, password });
       } else {
+        if (password !== confirmPassword) {
+          setError("Passwords do not match.");
+          setLoading(false);
+          return;
+        }
+        const policyError = passwordPolicyError(password, { username, email, fullName });
+        if (policyError) {
+          setError(policyError);
+          setLoading(false);
+          return;
+        }
         await register({ username, email, fullName: fullName || undefined, password });
       }
       navigate(redirectTo, { replace: true });
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Authentication failed.");
+      setError(errorMessage(caught, "Authentication failed."));
     } finally {
       setLoading(false);
     }
@@ -118,10 +133,34 @@ export function AuthPage() {
               onChange={(event) => setPassword(event.target.value)}
               autoComplete={mode === "login" ? "current-password" : "new-password"}
               type="password"
-              minLength={6}
+              minLength={mode === "register" ? 8 : 6}
               required
             />
           </label>
+
+          {mode === "register" ? (
+            <ul className="password-rules">
+              {registerPasswordRules.map((rule) => (
+                <li className={rule.passed ? "passed" : ""} key={rule.id}>
+                  {rule.label}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+
+          {mode === "register" ? (
+            <label className="field">
+              <span>Confirm password</span>
+              <input
+                value={confirmPassword}
+                onChange={(event) => setConfirmPassword(event.target.value)}
+                autoComplete="new-password"
+                type="password"
+                minLength={8}
+                required
+              />
+            </label>
+          ) : null}
 
           {error ? <div className="form-error">{error}</div> : null}
 

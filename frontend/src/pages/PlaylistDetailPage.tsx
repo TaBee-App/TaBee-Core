@@ -2,6 +2,8 @@ import { Star, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { deletePlaylist, getPlaylist, removeTabFromPlaylist, savePlaylist, unsavePlaylist } from "../api/tabeeApi";
+import { ConfirmDialog } from "../components/ConfirmDialog";
+import { errorMessage } from "../lib/errors";
 import type { PlaylistResponse } from "../types/tab";
 
 export function PlaylistDetailPage() {
@@ -9,6 +11,9 @@ export function PlaylistDetailPage() {
   const navigate = useNavigate();
   const [playlist, setPlaylist] = useState<PlaylistResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [deletingPlaylist, setDeletingPlaylist] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [removingTabId, setRemovingTabId] = useState<number | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -25,7 +30,7 @@ export function PlaylistDetailPage() {
         }
       } catch (caught) {
         if (active) {
-          setError(caught instanceof Error ? caught.message : "Could not load playlist.");
+          setError(errorMessage(caught, "Could not load playlist."));
         }
       } finally {
         if (active) {
@@ -46,30 +51,34 @@ export function PlaylistDetailPage() {
       const updated = playlist.savedByCurrentUser ? await unsavePlaylist(playlist.id) : await savePlaylist(playlist.id);
       setPlaylist(updated);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Could not update saved playlist.");
+      setError(errorMessage(caught, "Could not update saved playlist."));
     }
   }
 
   async function removeTab(tabId: number) {
     if (!playlist || !playlist.createdByCurrentUser) return;
+    setRemovingTabId(tabId);
     try {
       setPlaylist(await removeTabFromPlaylist(playlist.id, tabId));
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Could not remove tab.");
+      setError(errorMessage(caught, "Could not remove tab."));
+    } finally {
+      setRemovingTabId(null);
     }
   }
 
   async function removePlaylist() {
     if (!playlist || !playlist.createdByCurrentUser) return;
-    if (!window.confirm(`Delete "${playlist.name}"? This will remove the playlist, but not the tabs inside it.`)) {
-      return;
-    }
 
+    setDeletingPlaylist(true);
     try {
       await deletePlaylist(playlist.id);
       navigate("/profile");
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Could not delete playlist.");
+      setDeleteConfirmOpen(false);
+      setError(errorMessage(caught, "Could not delete playlist."));
+    } finally {
+      setDeletingPlaylist(false);
     }
   }
 
@@ -117,7 +126,7 @@ export function PlaylistDetailPage() {
             {playlist.savedByCurrentUser ? "Saved" : "Save playlist"}
           </button>
         ) : (
-          <button className="btn ghost danger" onClick={removePlaylist}>
+          <button className="btn ghost danger" onClick={() => setDeleteConfirmOpen(true)}>
             <Trash2 size={18} />
             Delete playlist
           </button>
@@ -145,7 +154,12 @@ export function PlaylistDetailPage() {
                 </span>
               </Link>
               {playlist.createdByCurrentUser ? (
-                <button className="icon-btn subtle" title="Remove from playlist" onClick={() => removeTab(tab.tabId)}>
+                <button
+                  className="icon-btn subtle"
+                  title="Remove from playlist"
+                  disabled={removingTabId === tab.tabId}
+                  onClick={() => removeTab(tab.tabId)}
+                >
                   <Trash2 size={17} />
                 </button>
               ) : null}
@@ -160,6 +174,17 @@ export function PlaylistDetailPage() {
           </div>
         ) : null}
       </section>
+      {deleteConfirmOpen && playlist ? (
+        <ConfirmDialog
+          title="Delete playlist?"
+          message={`Delete "${playlist.name}"? Tabs inside it will stay in your account.`}
+          confirmLabel="Delete playlist"
+          loading={deletingPlaylist}
+          tone="danger"
+          onCancel={() => setDeleteConfirmOpen(false)}
+          onConfirm={removePlaylist}
+        />
+      ) : null}
     </main>
   );
 }

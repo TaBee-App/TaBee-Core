@@ -3,6 +3,8 @@ import { FormEvent, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { logout, updateMe } from "../api/authApi";
 import { getCurrentUser } from "../api/authSession";
+import { errorMessage } from "../lib/errors";
+import { passwordPolicyError, passwordRules } from "../lib/passwordPolicy";
 import type { UserProfile } from "../types/auth";
 
 export function AppShell() {
@@ -18,6 +20,11 @@ export function AppShell() {
     fullName: currentUser?.fullName || "",
     currentPassword: "",
     password: ""
+  });
+  const newPasswordRules = passwordRules(profileForm.password, {
+    username: profileForm.username,
+    email: profileForm.email,
+    fullName: profileForm.fullName
   });
 
   function signOut() {
@@ -54,6 +61,13 @@ export function AppShell() {
       setProfileError("Current password is required to update your profile.");
       return;
     }
+    if (password) {
+      const policyError = passwordPolicyError(password, { username, email, fullName });
+      if (policyError) {
+        setProfileError(policyError);
+        return;
+      }
+    }
 
     setSavingProfile(true);
     setProfileError("");
@@ -69,7 +83,7 @@ export function AppShell() {
       setEditOpen(false);
       setProfileForm((current) => ({ ...current, currentPassword: "", password: "" }));
     } catch (caught) {
-      setProfileError(caught instanceof Error ? caught.message : "Could not update profile.");
+      setProfileError(errorMessage(caught, "Could not update profile."));
     } finally {
       setSavingProfile(false);
     }
@@ -187,9 +201,19 @@ export function AppShell() {
                 type="password"
                 value={profileForm.password}
                 placeholder="Leave blank to keep current password"
+                minLength={8}
                 onChange={(event) => setProfileForm((current) => ({ ...current, password: event.target.value }))}
               />
             </label>
+            {profileForm.password ? (
+              <ul className="password-rules">
+                {newPasswordRules.map((rule) => (
+                  <li className={rule.passed ? "passed" : ""} key={rule.id}>
+                    {rule.label}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
             <button className="btn primary full" disabled={savingProfile} type="submit">
               <Save size={18} />
               {savingProfile ? "Saving..." : "Save profile"}

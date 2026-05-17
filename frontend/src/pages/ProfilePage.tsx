@@ -12,7 +12,9 @@ import {
   listSavedPlaylists,
   listTabs
 } from "../api/tabeeApi";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 import { getCurrentUser } from "../api/authSession";
+import { errorMessage } from "../lib/errors";
 import { removeTab as removeCachedTab } from "../lib/tabStore";
 import type { PublicUserProfile } from "../types/auth";
 import type { GeneratedTab, PlaylistResponse } from "../types/tab";
@@ -33,6 +35,12 @@ export function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [creatingPlaylist, setCreatingPlaylist] = useState(false);
   const [savingTabId, setSavingTabId] = useState("");
+  const [deletingId, setDeletingId] = useState("");
+  const [confirmAction, setConfirmAction] = useState<
+    | { type: "playlist"; playlist: PlaylistResponse }
+    | { type: "tab"; tab: GeneratedTab }
+    | null
+  >(null);
   const [error, setError] = useState("");
 
   const playlistTabIds = useMemo(() => {
@@ -66,7 +74,7 @@ export function ProfilePage() {
         setSelectedPlaylists(defaultPlaylistSelections(nextTabs, nextPlaylists));
       } catch (caught) {
         if (active) {
-          setError(caught instanceof Error ? caught.message : "Could not load profile.");
+          setError(errorMessage(caught, "Could not load profile."));
         }
       } finally {
         if (active) {
@@ -94,7 +102,7 @@ export function ProfilePage() {
       const playlist = await addTabToPlaylist(Number(playlistId), tabId);
       setPlaylists((current) => current.map((item) => (item.id === playlist.id ? playlist : item)));
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Could not add tab to playlist.");
+      setError(errorMessage(caught, "Could not add tab to playlist."));
     } finally {
       setSavingTabId("");
     }
@@ -122,32 +130,30 @@ export function ProfilePage() {
       setPlaylistDescription("");
       setCreateOpen(false);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Could not create playlist.");
+      setError(errorMessage(caught, "Could not create playlist."));
     } finally {
       setCreatingPlaylist(false);
     }
   }
 
   async function removePlaylist(playlist: PlaylistResponse) {
-    if (!window.confirm(`Delete "${playlist.name}"? This will remove the playlist, but not the tabs inside it.`)) {
-      return;
-    }
-
+    setDeletingId(`playlist-${playlist.id}`);
     setError("");
     try {
       await deletePlaylist(playlist.id);
-      setPlaylists((current) => current.filter((item) => item.id !== playlist.id));
-      setSelectedPlaylists(defaultPlaylistSelections(tabs, playlists.filter((item) => item.id !== playlist.id)));
+      const nextPlaylists = playlists.filter((item) => item.id !== playlist.id);
+      setPlaylists(nextPlaylists);
+      setSelectedPlaylists(defaultPlaylistSelections(tabs, nextPlaylists));
+      setConfirmAction(null);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Could not delete playlist.");
+      setError(errorMessage(caught, "Could not delete playlist."));
+    } finally {
+      setDeletingId("");
     }
   }
 
   async function removeCreatedTab(tab: GeneratedTab) {
-    if (!window.confirm(`Delete "${tab.title}"? This removes the tab from your account and from playlists.`)) {
-      return;
-    }
-
+    setDeletingId(`tab-${tab.id}`);
     setError("");
     try {
       await deleteGeneratedTab(tab.id);
@@ -164,8 +170,11 @@ export function ProfilePage() {
         delete next[tab.id];
         return next;
       });
+      setConfirmAction(null);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Could not delete tab.");
+      setError(errorMessage(caught, "Could not delete tab."));
+    } finally {
+      setDeletingId("");
     }
   }
 
@@ -264,7 +273,8 @@ export function ProfilePage() {
                       <button
                         className="icon-btn subtle danger"
                         title="Delete playlist"
-                        onClick={() => removePlaylist(playlist)}
+                        disabled={deletingId === `playlist-${playlist.id}`}
+                        onClick={() => setConfirmAction({ type: "playlist", playlist })}
                       >
                         <Trash2 size={17} />
                       </button>
@@ -375,7 +385,8 @@ export function ProfilePage() {
                     <button
                       className="icon-btn subtle danger"
                       title="Delete tab"
-                      onClick={() => removeCreatedTab(tab)}
+                      disabled={deletingId === `tab-${tab.id}`}
+                      onClick={() => setConfirmAction({ type: "tab", tab })}
                     >
                       <Trash2 size={17} />
                     </button>
@@ -439,6 +450,29 @@ export function ProfilePage() {
             </button>
           </form>
         </div>
+      ) : null}
+      {confirmAction ? (
+        <ConfirmDialog
+          title={confirmAction.type === "playlist" ? "Delete playlist?" : "Delete tab?"}
+          message={
+            confirmAction.type === "playlist"
+              ? `Delete "${confirmAction.playlist.name}"? Tabs inside it will stay in your account.`
+              : `Delete "${confirmAction.tab.title}"? This removes it from your account and playlists.`
+          }
+          confirmLabel={confirmAction.type === "playlist" ? "Delete playlist" : "Delete tab"}
+          loading={
+            confirmAction.type === "playlist"
+              ? deletingId === `playlist-${confirmAction.playlist.id}`
+              : deletingId === `tab-${confirmAction.tab.id}`
+          }
+          tone="danger"
+          onCancel={() => setConfirmAction(null)}
+          onConfirm={() =>
+            confirmAction.type === "playlist"
+              ? removePlaylist(confirmAction.playlist)
+              : removeCreatedTab(confirmAction.tab)
+          }
+        />
       ) : null}
     </main>
   );

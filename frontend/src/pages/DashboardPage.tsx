@@ -2,6 +2,8 @@ import { FilePlus2, Music, Search, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { deleteGeneratedTab, listPublicTabs, listTabs } from "../api/tabeeApi";
+import { ConfirmDialog } from "../components/ConfirmDialog";
+import { errorMessage } from "../lib/errors";
 import { loadTabs, removeTab, saveTabs, upsertTab } from "../lib/tabStore";
 import { demoTab } from "../lib/demoTab";
 import type { GeneratedTab } from "../types/tab";
@@ -12,6 +14,8 @@ export function DashboardPage() {
   const [publicTabs, setPublicTabs] = useState<GeneratedTab[]>([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [deleteCandidate, setDeleteCandidate] = useState<GeneratedTab | null>(null);
+  const [deletingTabId, setDeletingTabId] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -29,7 +33,7 @@ export function DashboardPage() {
         setPublicTabs(nextPublicTabs);
       } catch (caught) {
         if (!active) return;
-        setError(caught instanceof Error ? caught.message : "Could not load backend tabs.");
+        setError(errorMessage(caught, "Could not load backend tabs."));
       } finally {
         if (active) {
           setLoading(false);
@@ -62,21 +66,27 @@ export function DashboardPage() {
     navigate("/tabs/demo");
   }
 
-  async function deleteTab(tabId: string) {
+  async function deleteTab(tab: GeneratedTab) {
+    setDeletingTabId(tab.id);
     const previousTabs = tabs;
-    const nextTabs = removeTab(tabId);
+    const nextTabs = removeTab(tab.id);
     setTabs(nextTabs);
 
-    if (tabId === demoTab.id) {
+    if (tab.id === demoTab.id) {
+      setDeleteCandidate(null);
+      setDeletingTabId("");
       return;
     }
 
     try {
-      await deleteGeneratedTab(tabId);
+      await deleteGeneratedTab(tab.id);
+      setDeleteCandidate(null);
     } catch (caught) {
       saveTabs(previousTabs);
       setTabs(previousTabs);
-      setError(caught instanceof Error ? caught.message : "Could not delete tab.");
+      setError(errorMessage(caught, "Could not delete tab."));
+    } finally {
+      setDeletingTabId("");
     }
   }
 
@@ -130,7 +140,8 @@ export function DashboardPage() {
               <button
                 className="icon-btn subtle"
                 title="Delete"
-                onClick={() => deleteTab(tab.id)}
+                disabled={deletingTabId === tab.id}
+                onClick={() => setDeleteCandidate(tab)}
               >
                 <Trash2 size={17} />
               </button>
@@ -174,6 +185,17 @@ export function DashboardPage() {
           </div>
         ) : null}
       </section>
+      {deleteCandidate ? (
+        <ConfirmDialog
+          title="Delete tab?"
+          message={`Delete "${deleteCandidate.title}"? This removes it from your recent library${deleteCandidate.id === demoTab.id ? "." : " and your account."}`}
+          confirmLabel="Delete tab"
+          loading={deletingTabId === deleteCandidate.id}
+          tone="danger"
+          onCancel={() => setDeleteCandidate(null)}
+          onConfirm={() => deleteTab(deleteCandidate)}
+        />
+      ) : null}
     </main>
   );
 }

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.tabee.backend.user.UserDtos.UserRequest;
+import com.tabee.backend.user.UserDtos.UserDeleteRequest;
 import com.tabee.backend.user.UserDtos.UserUpdateRequest;
 
 @Service
@@ -31,9 +32,10 @@ public class UserService {
     public List<User> search(String query) {
         String normalized = query == null ? "" : query.trim();
         if (normalized.isBlank()) {
-            return List.of();
+            return userRepository.findTop24ByOrderByUsernameAsc();
         }
-        return userRepository.findTop12ByUsernameContainingIgnoreCaseOrFullNameContainingIgnoreCaseOrderByUsernameAsc(
+        return userRepository.findTop24ByUsernameContainingIgnoreCaseOrFullNameContainingIgnoreCaseOrEmailContainingIgnoreCaseOrderByUsernameAsc(
+                normalized,
                 normalized,
                 normalized
         );
@@ -47,6 +49,7 @@ public class UserService {
     public User create(UserRequest request) {
         ensureUsernameAvailable(request.username(), null);
         ensureEmailAvailable(request.email(), null);
+        PasswordPolicy.validate(request.password(), request.username(), request.email(), request.fullName());
 
         User user = new User();
         user.setUsername(request.username());
@@ -60,7 +63,7 @@ public class UserService {
         User user = findById(id);
 
         if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Current password is incorrect");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Current password is incorrect");
         }
 
         if (request.username() != null && !request.username().isBlank()) {
@@ -75,6 +78,7 @@ public class UserService {
             user.setFullName(request.fullName());
         }
         if (request.password() != null && !request.password().isBlank()) {
+            PasswordPolicy.validate(request.password(), user.getUsername(), user.getEmail(), user.getFullName());
             user.setPasswordHash(passwordEncoder.encode(request.password()));
         }
 
@@ -83,6 +87,19 @@ public class UserService {
 
     public void delete(Long id) {
         User user = findById(id);
+        userRepository.delete(user);
+    }
+
+    public void delete(Long id, UserDeleteRequest request) {
+        User user = findById(id);
+
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Current password is incorrect");
+        }
+        if (!"delete my account".equals(request.confirmation())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Confirmation phrase does not match");
+        }
+
         userRepository.delete(user);
     }
 

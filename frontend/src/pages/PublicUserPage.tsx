@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { followUser, getPublicUser, unfollowUser } from "../api/authApi";
 import { listPlaylistArchiveByUser, listPublicTabsByUser } from "../api/tabeeApi";
+import { errorMessage } from "../lib/errors";
 import type { PublicUserProfile } from "../types/auth";
 import type { GeneratedTab, PlaylistResponse } from "../types/tab";
 
@@ -33,7 +34,7 @@ export function PublicUserPage() {
         setPlaylists(nextPlaylists);
       } catch (caught) {
         if (active) {
-          setError(caught instanceof Error ? caught.message : "Could not load user.");
+          setError(errorMessage(caught, "Could not load user."));
         }
       } finally {
         if (active) {

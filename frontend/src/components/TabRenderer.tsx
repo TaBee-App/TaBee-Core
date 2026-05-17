@@ -1,5 +1,6 @@
 import * as alphaTab from "@coderline/alphatab";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { errorMessage } from "../lib/errors";
 import type { GeneratedTab } from "../types/tab";
 
 type PlaybackBeat = {
@@ -258,7 +259,7 @@ export function TabRenderer({
       });
       api.tex(tab.alphaTex);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Unable to render this tab.");
+      setError(errorMessage(caught, "Unable to render this tab."));
       onReadyChange(false);
     }
 

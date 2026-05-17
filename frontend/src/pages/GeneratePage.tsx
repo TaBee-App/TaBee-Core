@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { generateTab } from "../api/tabeeApi";
 import { FileDropzone } from "../components/FileDropzone";
+import { errorMessage } from "../lib/errors";
 import { upsertTab } from "../lib/tabStore";
 import type { Instrument } from "../types/tab";
 
@@ -38,7 +39,7 @@ export function GeneratePage() {
       upsertTab(response);
       navigate(`/tabs/${response.id}`);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Error during processing.");
+      setError(errorMessage(caught, "Error during processing."));
     } finally {
       setLoading(false);
     }

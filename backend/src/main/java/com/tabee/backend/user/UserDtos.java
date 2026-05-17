@@ -13,7 +13,7 @@ public final class UserDtos {
     public record UserRequest(
             @NotBlank @Size(max = 50) String username,
             @NotBlank @Email String email,
-            @NotBlank @Size(min = 6, max = 100) String password,
+            @NotBlank @Size(min = 8, max = 100) String password,
             @Size(max = 100) String fullName
     ) {
     }
@@ -22,8 +22,14 @@ public final class UserDtos {
             @NotBlank @Size(min = 6, max = 100) String currentPassword,
             @Size(max = 50) String username,
             @Email String email,
-            @Size(min = 6, max = 100) String password,
+            @Size(min = 8, max = 100) String password,
             @Size(max = 100) String fullName
+    ) {
+    }
+
+    public record UserDeleteRequest(
+            @NotBlank @Size(min = 6, max = 100) String currentPassword,
+            @NotBlank String confirmation
     ) {
     }
 

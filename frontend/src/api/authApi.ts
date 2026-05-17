@@ -1,6 +1,13 @@
 import { apiFetch } from "./apiClient";
 import { clearAuthSession, saveAuthSession, saveCurrentUser } from "./authSession";
-import type { AuthResponse, LoginRequest, PublicUserProfile, RegisterRequest, UserUpdateRequest } from "../types/auth";
+import type {
+  AuthResponse,
+  DeleteAccountRequest,
+  LoginRequest,
+  PublicUserProfile,
+  RegisterRequest,
+  UserUpdateRequest
+} from "../types/auth";
 
 export async function login(request: LoginRequest) {
   const response = await apiFetch<AuthResponse>("/api/auth/login", {
@@ -35,6 +42,14 @@ export async function updateMe(request: UserUpdateRequest) {
   });
   saveCurrentUser(user);
   return user;
+}
+
+export async function deleteMe(request: DeleteAccountRequest) {
+  await apiFetch<null>("/api/users/me", {
+    method: "DELETE",
+    body: JSON.stringify(request)
+  });
+  clearAuthSession();
 }
 
 export async function searchUsers(query: string) {

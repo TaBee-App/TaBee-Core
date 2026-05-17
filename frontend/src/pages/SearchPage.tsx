@@ -1,9 +1,11 @@
 import { ListMusic, Music, Search, UserRound } from "lucide-react";
 import type React from "react";
+import type { FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { followUser, searchUsers, unfollowUser } from "../api/authApi";
 import { listPlaylistArchive, listPublicTabs } from "../api/tabeeApi";
+import { errorMessage } from "../lib/errors";
 import type { PublicUserProfile } from "../types/auth";
 import type { GeneratedTab, PlaylistResponse } from "../types/tab";
 
@@ -17,42 +19,37 @@ export function SearchPage() {
   const [users, setUsers] = useState<PublicUserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchingUsers, setSearchingUsers] = useState(false);
+  const [submittedQuery, setSubmittedQuery] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
-    let active = true;
-
     async function loadSearchData() {
       setLoading(true);
       setError("");
       try {
         const [nextTabs, nextPlaylists] = await Promise.all([listPublicTabs(), listPlaylistArchive()]);
-        if (!active) return;
         setTabs(nextTabs);
         setPlaylists(nextPlaylists);
       } catch (caught) {
-        if (active) {
-          setError(caught instanceof Error ? caught.message : "Could not load searchable content.");
-        }
+        setError(errorMessage(caught, "Could not load searchable content."));
       } finally {
-        if (active) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
     }
 
     loadSearchData();
-    return () => {
-      active = false;
-    };
   }, []);
 
   useEffect(() => {
     let active = true;
-    const normalized = query.trim();
+    const normalized = submittedQuery.trim();
 
     async function runUserSearch() {
-      if ((scope !== "all" && scope !== "users") || normalized.length < 2) {
+      if (!normalized) {
+        setUsers([]);
+        return;
+      }
+      if (scope !== "all" && scope !== "users") {
         setUsers([]);
         return;
       }
@@ -79,25 +76,25 @@ export function SearchPage() {
       active = false;
       window.clearTimeout(timer);
     };
-  }, [query, scope]);
+  }, [submittedQuery, scope]);
 
   const filteredTabs = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
-    if (!normalized) return tabs.slice(0, 8);
+    const normalized = submittedQuery.trim().toLowerCase();
+    if (!normalized) return [];
     return tabs.filter((tab) =>
       `${tab.title} ${tab.fileName} ${tab.instrument} ${tab.ownerUsername || ""}`.toLowerCase().includes(normalized)
     );
-  }, [query, tabs]);
+  }, [submittedQuery, tabs]);
 
   const filteredPlaylists = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
-    if (!normalized) return playlists.slice(0, 8);
+    const normalized = submittedQuery.trim().toLowerCase();
+    if (!normalized) return [];
     return playlists.filter((playlist) =>
       `${playlist.name} ${playlist.description || ""} ${playlist.ownerUsername} ${playlist.tabs.map((tab) => tab.title).join(" ")}`
         .toLowerCase()
         .includes(normalized)
     );
-  }, [playlists, query]);
+  }, [playlists, submittedQuery]);
 
   async function toggleFollow(user: PublicUserProfile) {
     const updated = user.followedByCurrentUser ? await unfollowUser(user.id) : await followUser(user.id);
@@ -107,6 +104,12 @@ export function SearchPage() {
   const showTabs = scope === "all" || scope === "tabs";
   const showPlaylists = scope === "all" || scope === "playlists";
   const showUsers = scope === "all" || scope === "users";
+  const hasSearched = Boolean(submittedQuery.trim());
+
+  function submitSearch(event: FormEvent) {
+    event.preventDefault();
+    setSubmittedQuery(query.trim());
+  }
 
   return (
     <main className="page-grid">
@@ -119,7 +122,7 @@ export function SearchPage() {
       </section>
 
       <section className="library-panel">
-        <label className="search-box search-hero-box">
+        <form className="search-box search-hero-box" onSubmit={submitSearch}>
           <Search size={19} />
           <input
             value={query}
@@ -127,7 +130,10 @@ export function SearchPage() {
             placeholder="Search TaBee"
             autoFocus
           />
-        </label>
+          <button className="search-submit-btn" type="submit">
+            Search
+          </button>
+        </form>
 
         <div className="archive-tabs">
           {(["all", "tabs", "playlists", "users"] as SearchScope[]).map((nextScope) => (
@@ -140,7 +146,14 @@ export function SearchPage() {
 
         {error ? <div className="form-error">{error}</div> : null}
 
-        {showTabs ? (
+        {!hasSearched ? (
+          <div className="empty-panel compact">
+            <h3>Search TaBee</h3>
+            <p>Enter a word, username, playlist name, artist, or file title, then press Enter.</p>
+          </div>
+        ) : null}
+
+        {hasSearched && showTabs ? (
           <SearchSection title="Tabs" count={filteredTabs.length} loading={loading}>
             {filteredTabs.map((tab) => (
               <article className="tab-card" key={tab.id}>
@@ -155,7 +168,7 @@ export function SearchPage() {
           </SearchSection>
         ) : null}
 
-        {showPlaylists ? (
+        {hasSearched && showPlaylists ? (
           <SearchSection title="Playlists" count={filteredPlaylists.length} loading={loading}>
             {filteredPlaylists.map((playlist) => (
               <article className="playlist-card" key={playlist.id}>
@@ -170,7 +183,7 @@ export function SearchPage() {
           </SearchSection>
         ) : null}
 
-        {showUsers ? (
+        {hasSearched && showUsers ? (
           <SearchSection title="Users" count={users.length} loading={searchingUsers}>
             {users.map((user) => (
               <article className="profile-user-row" key={user.id}>
