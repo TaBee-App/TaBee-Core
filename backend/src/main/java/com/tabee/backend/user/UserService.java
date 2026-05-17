@@ -59,6 +59,10 @@ public class UserService {
     public User update(Long id, UserUpdateRequest request) {
         User user = findById(id);
 
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Current password is incorrect");
+        }
+
         if (request.username() != null && !request.username().isBlank()) {
             ensureUsernameAvailable(request.username(), id);
             user.setUsername(request.username());
@@ -120,6 +124,16 @@ public class UserService {
         User followed = findById(followedUserId);
         userFollowRepository.deleteById(new UserFollowId(follower.getId(), followedUserId));
         return followed;
+    }
+
+    public User removeFollower(User current, Long followerUserId) {
+        if (current.getId().equals(followerUserId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You cannot remove yourself as a follower");
+        }
+
+        User follower = findById(followerUserId);
+        userFollowRepository.deleteById(new UserFollowId(followerUserId, current.getId()));
+        return follower;
     }
 
     private void ensureUsernameAvailable(String username, Long currentUserId) {

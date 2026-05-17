@@ -46,3 +46,11 @@ export interface RegisterRequest {
   password: string;
   fullName?: string;
 }
+
+export interface UserUpdateRequest {
+  currentPassword: string;
+  username?: string;
+  email?: string;
+  password?: string;
+  fullName?: string;
+}

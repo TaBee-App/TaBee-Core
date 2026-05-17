@@ -1,8 +1,9 @@
-import { Download, FileDown, Pencil, RotateCcw, Save, Star, X } from "lucide-react";
+import { FileDown, Pencil, Plus, Save, Star, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   addTabToPlaylist,
+  deleteGeneratedTab,
   favoriteTab,
   getGeneratedTab,
   getPublicGeneratedTab,
@@ -14,11 +15,12 @@ import { PlayerBar } from "../components/PlayerBar";
 import { TabRenderer } from "../components/TabRenderer";
 import { slugify } from "../lib/format";
 import { demoTab } from "../lib/demoTab";
-import { getTab, upsertTab } from "../lib/tabStore";
+import { getTab, removeTab, upsertTab } from "../lib/tabStore";
 import type { GeneratedTab, PlaylistResponse } from "../types/tab";
 
 export function TabViewerPage() {
   const { tabId } = useParams();
+  const navigate = useNavigate();
   const [tab, setTab] = useState<GeneratedTab | null>(null);
   const [ready, setReady] = useState(false);
   const [playing, setPlaying] = useState(false);
@@ -124,19 +126,6 @@ export function TabViewerPage() {
     return `${tab.instrument} / ${tempo} / ${speed}% speed${looping ? " / loop on" : ""}`;
   }, [looping, speed, tab]);
 
-  function downloadAlphaTex() {
-    if (!tab) return;
-    const blob = new Blob([tab.alphaTex], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${slugify(tab.title)}.tex`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
-  }
-
   function downloadPdf() {
     if (!tab) return;
 
@@ -238,6 +227,22 @@ export function TabViewerPage() {
     }
   }
 
+  async function deleteTab() {
+    if (!tab || tab.id === "demo" || !tab.createdByCurrentUser) return;
+    if (!window.confirm(`Delete "${tab.title}"? This removes the tab from your account and from playlists.`)) {
+      return;
+    }
+
+    setError("");
+    try {
+      await deleteGeneratedTab(tab.id);
+      removeTab(tab.id);
+      navigate("/profile");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not delete tab.");
+    }
+  }
+
   if (!tab && loading) {
     return (
       <main className="viewer-page">
@@ -316,30 +321,6 @@ export function TabViewerPage() {
               )}
             </div>
             <div className="score-actions">
-              {!editing && tab.id !== "demo" && playlists.length ? (
-                <div className="playlist-adder">
-                  <select value={selectedPlaylistId} onChange={(event) => setSelectedPlaylistId(event.target.value)}>
-                    {playlists.map((playlist) => (
-                      <option key={playlist.id} value={playlist.id}>
-                        {playlist.name}
-                      </option>
-                    ))}
-                  </select>
-                  <button className="btn ghost" disabled={playlistSaving || !selectedPlaylistId} onClick={addToPlaylist}>
-                    {playlistSaving ? "Adding..." : "Add"}
-                  </button>
-                </div>
-              ) : null}
-              {!editing && tab.id !== "demo" && !tab.createdByCurrentUser ? (
-                <button
-                  className={`btn ghost${tab.favoritedByCurrentUser ? " active" : ""}`}
-                  disabled={favoriteSaving}
-                  onClick={toggleFavorite}
-                >
-                  <Star size={17} />
-                  {tab.favoritedByCurrentUser ? "Favorited" : "Favorite"}
-                </button>
-              ) : null}
               {editing ? (
                 <>
                   <button className="btn ghost" disabled={saving} onClick={cancelEditing}>
@@ -352,27 +333,63 @@ export function TabViewerPage() {
                   </button>
                 </>
               ) : tab.id !== "demo" ? (
-                <button className="btn ghost" onClick={startEditing}>
-                  <Pencil size={17} />
-                  Edit
-                </button>
-              ) : null}
-              <button className="btn ghost" onClick={() => {
-                setPlaying(false);
-                setReady(false);
-                setRenderKey((current) => current + 1);
-              }}>
-                <RotateCcw size={17} />
-                Refresh
-              </button>
-              <button className="btn ghost" onClick={downloadAlphaTex}>
-                <Download size={17} />
-                AlphaTex
-              </button>
-              <button className="btn ghost" onClick={downloadPdf}>
-                <FileDown size={17} />
-                PDF
-              </button>
+                <>
+                  <div className="score-primary-actions">
+                    {playlists.length ? (
+                      <div className="playlist-adder">
+                        <select
+                          aria-label="Playlist"
+                          value={selectedPlaylistId}
+                          onChange={(event) => setSelectedPlaylistId(event.target.value)}
+                        >
+                          {playlists.map((playlist) => (
+                            <option key={playlist.id} value={playlist.id}>
+                              {playlist.name}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          className="icon-btn primary"
+                          title={playlistSaving ? "Adding to playlist" : "Add to playlist"}
+                          disabled={playlistSaving || !selectedPlaylistId}
+                          onClick={addToPlaylist}
+                        >
+                          <Plus size={18} />
+                        </button>
+                      </div>
+                    ) : null}
+                    {!tab.createdByCurrentUser ? (
+                      <button
+                        className={`icon-btn subtle${tab.favoritedByCurrentUser ? " active" : ""}`}
+                        title={tab.favoritedByCurrentUser ? "Favorited" : "Favorite"}
+                        disabled={favoriteSaving}
+                        onClick={toggleFavorite}
+                      >
+                        <Star size={17} />
+                      </button>
+                    ) : null}
+                  </div>
+                  <div className="score-tool-actions">
+                    <button className="icon-btn subtle" title="Edit details" onClick={startEditing}>
+                      <Pencil size={17} />
+                    </button>
+                    {tab.createdByCurrentUser ? (
+                      <button className="icon-btn subtle danger" title="Delete tab" onClick={deleteTab}>
+                        <Trash2 size={17} />
+                      </button>
+                    ) : null}
+                    <button className="icon-btn subtle" title="Download PDF" onClick={downloadPdf}>
+                      <FileDown size={17} />
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="score-tool-actions">
+                  <button className="icon-btn subtle" title="Download PDF" onClick={downloadPdf}>
+                    <FileDown size={17} />
+                  </button>
+                </div>
+              )}
             </div>
           </div>
           {error ? <div className="form-error">{error}</div> : null}

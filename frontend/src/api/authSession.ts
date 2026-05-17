@@ -21,6 +21,10 @@ export function saveAuthSession(response: AuthResponse) {
   localStorage.setItem(USER_KEY, JSON.stringify(response.user));
 }
 
+export function saveCurrentUser(user: UserProfile) {
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
+}
+
 export function clearAuthSession() {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);

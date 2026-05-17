@@ -19,6 +19,7 @@ public final class UserDtos {
     }
 
     public record UserUpdateRequest(
+            @NotBlank @Size(min = 6, max = 100) String currentPassword,
             @Size(max = 50) String username,
             @Email String email,
             @Size(min = 6, max = 100) String password,

@@ -1,16 +1,19 @@
-import { Music, Plus, Star, UserRound, X } from "lucide-react";
+import { Music, Plus, Star, Trash2, UserRound, X } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { getPublicUser } from "../api/authApi";
 import {
   addTabToPlaylist,
   createPlaylist,
+  deleteGeneratedTab,
+  deletePlaylist,
   listFavoriteTabs,
   listPlaylists,
   listSavedPlaylists,
   listTabs
 } from "../api/tabeeApi";
 import { getCurrentUser } from "../api/authSession";
+import { removeTab as removeCachedTab } from "../lib/tabStore";
 import type { PublicUserProfile } from "../types/auth";
 import type { GeneratedTab, PlaylistResponse } from "../types/tab";
 
@@ -125,6 +128,47 @@ export function ProfilePage() {
     }
   }
 
+  async function removePlaylist(playlist: PlaylistResponse) {
+    if (!window.confirm(`Delete "${playlist.name}"? This will remove the playlist, but not the tabs inside it.`)) {
+      return;
+    }
+
+    setError("");
+    try {
+      await deletePlaylist(playlist.id);
+      setPlaylists((current) => current.filter((item) => item.id !== playlist.id));
+      setSelectedPlaylists(defaultPlaylistSelections(tabs, playlists.filter((item) => item.id !== playlist.id)));
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not delete playlist.");
+    }
+  }
+
+  async function removeCreatedTab(tab: GeneratedTab) {
+    if (!window.confirm(`Delete "${tab.title}"? This removes the tab from your account and from playlists.`)) {
+      return;
+    }
+
+    setError("");
+    try {
+      await deleteGeneratedTab(tab.id);
+      removeCachedTab(tab.id);
+      setTabs((current) => current.filter((item) => item.id !== tab.id));
+      setPlaylists((current) =>
+        current.map((playlist) => ({
+          ...playlist,
+          tabs: playlist.tabs.filter((playlistTab) => String(playlistTab.tabId) !== tab.id)
+        }))
+      );
+      setSelectedPlaylists((current) => {
+        const next = { ...current };
+        delete next[tab.id];
+        return next;
+      });
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not delete tab.");
+    }
+  }
+
   return (
     <main className="profile-page">
       <section className="profile-hero">
@@ -205,17 +249,28 @@ export function ProfilePage() {
 
             <div className="profile-list">
               {(playlistLayer === "created" ? playlists : savedPlaylists).map((playlist) => (
-                <Link className="profile-playlist-row" to={`/playlists/${playlist.id}`} key={playlist.id}>
-                  <div>
+                <article className="profile-playlist-row" key={playlist.id}>
+                  <Link to={`/playlists/${playlist.id}`}>
                     <span>{playlist.name}</span>
                     <small>
                       {playlistLayer === "created"
                         ? playlist.description || `${playlist.tabs.length} tabs`
                         : `by ${playlist.ownerUsername} / ${playlist.tabs.length} tabs`}
                     </small>
+                  </Link>
+                  <div className="profile-row-actions">
+                    <strong>{playlist.tabs.length}</strong>
+                    {playlistLayer === "created" ? (
+                      <button
+                        className="icon-btn subtle danger"
+                        title="Delete playlist"
+                        onClick={() => removePlaylist(playlist)}
+                      >
+                        <Trash2 size={17} />
+                      </button>
+                    ) : null}
                   </div>
-                  <strong>{playlist.tabs.length}</strong>
-                </Link>
+                </article>
               ))}
             </div>
 
@@ -288,34 +343,43 @@ export function ProfilePage() {
                   </small>
                 </Link>
                 {tabLayer === "created" ? (
-                  playlistTabIds.has(tab.id) ? (
-                    <span className="status-chip">In playlist</span>
-                  ) : (
-                    <div className="profile-row-actions">
-                      <select
-                        value={selectedPlaylists[tab.id] || ""}
-                        onChange={(event) =>
-                          setSelectedPlaylists((current) => ({ ...current, [tab.id]: event.target.value }))
-                        }
-                        disabled={!playlists.length}
-                      >
-                        {!playlists.length ? <option value="">No playlists</option> : null}
-                        {playlists.map((playlist) => (
-                          <option key={playlist.id} value={playlist.id}>
-                            {playlist.name}
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        className="icon-btn primary"
-                        title="Add to playlist"
-                        disabled={!playlists.length || savingTabId === tab.id}
-                        onClick={() => addToPlaylist(tab.id)}
-                      >
-                        <Plus size={18} />
-                      </button>
-                    </div>
-                  )
+                  <div className="profile-row-actions">
+                    {playlistTabIds.has(tab.id) ? (
+                      <span className="status-chip">In playlist</span>
+                    ) : (
+                      <>
+                        <select
+                          value={selectedPlaylists[tab.id] || ""}
+                          onChange={(event) =>
+                            setSelectedPlaylists((current) => ({ ...current, [tab.id]: event.target.value }))
+                          }
+                          disabled={!playlists.length}
+                        >
+                          {!playlists.length ? <option value="">No playlists</option> : null}
+                          {playlists.map((playlist) => (
+                            <option key={playlist.id} value={playlist.id}>
+                              {playlist.name}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          className="icon-btn primary"
+                          title="Add to playlist"
+                          disabled={!playlists.length || savingTabId === tab.id}
+                          onClick={() => addToPlaylist(tab.id)}
+                        >
+                          <Plus size={18} />
+                        </button>
+                      </>
+                    )}
+                    <button
+                      className="icon-btn subtle danger"
+                      title="Delete tab"
+                      onClick={() => removeCreatedTab(tab)}
+                    >
+                      <Trash2 size={17} />
+                    </button>
+                  </div>
                 ) : (
                   <Star className="favorite-inline-icon" size={18} />
                 )}

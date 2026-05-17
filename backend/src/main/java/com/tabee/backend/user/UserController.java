@@ -102,6 +102,12 @@ public class UserController {
         return publicUserResponse(current, userService.unfollow(current, id));
     }
 
+    @DeleteMapping("/{id}/follower")
+    public PublicUserResponse removeFollower(@AuthenticationPrincipal User user, @PathVariable Long id) {
+        User current = currentUser.require(user);
+        return publicUserResponse(current, userService.removeFollower(current, id));
+    }
+
     @PutMapping("/me")
     public UserResponse updateMe(@AuthenticationPrincipal User user, @Valid @RequestBody UserUpdateRequest request) {
         return UserResponse.from(userService.update(currentUser.require(user).getId(), request));

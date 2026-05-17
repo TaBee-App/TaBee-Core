@@ -1,6 +1,6 @@
 import { apiFetch } from "./apiClient";
-import { clearAuthSession, saveAuthSession } from "./authSession";
-import type { AuthResponse, LoginRequest, PublicUserProfile, RegisterRequest } from "../types/auth";
+import { clearAuthSession, saveAuthSession, saveCurrentUser } from "./authSession";
+import type { AuthResponse, LoginRequest, PublicUserProfile, RegisterRequest, UserUpdateRequest } from "../types/auth";
 
 export async function login(request: LoginRequest) {
   const response = await apiFetch<AuthResponse>("/api/auth/login", {
@@ -28,6 +28,15 @@ export function logout() {
   clearAuthSession();
 }
 
+export async function updateMe(request: UserUpdateRequest) {
+  const user = await apiFetch<PublicUserProfile & { email: string } & { updatedAt?: string }>("/api/users/me", {
+    method: "PUT",
+    body: JSON.stringify(request)
+  });
+  saveCurrentUser(user);
+  return user;
+}
+
 export async function searchUsers(query: string) {
   return apiFetch<PublicUserProfile[]>(`/api/users/search?q=${encodeURIComponent(query)}`);
 }
@@ -44,6 +53,12 @@ export async function followUser(userId: number) {
 
 export async function unfollowUser(userId: number) {
   return apiFetch<PublicUserProfile>(`/api/users/${userId}/follow`, {
+    method: "DELETE"
+  });
+}
+
+export async function removeFollower(userId: number) {
+  return apiFetch<PublicUserProfile>(`/api/users/${userId}/follower`, {
     method: "DELETE"
   });
 }

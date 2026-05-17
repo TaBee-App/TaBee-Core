@@ -1,11 +1,12 @@
 import { Star, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { getPlaylist, removeTabFromPlaylist, savePlaylist, unsavePlaylist } from "../api/tabeeApi";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { deletePlaylist, getPlaylist, removeTabFromPlaylist, savePlaylist, unsavePlaylist } from "../api/tabeeApi";
 import type { PlaylistResponse } from "../types/tab";
 
 export function PlaylistDetailPage() {
   const { playlistId } = useParams();
+  const navigate = useNavigate();
   const [playlist, setPlaylist] = useState<PlaylistResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -58,6 +59,20 @@ export function PlaylistDetailPage() {
     }
   }
 
+  async function removePlaylist() {
+    if (!playlist || !playlist.createdByCurrentUser) return;
+    if (!window.confirm(`Delete "${playlist.name}"? This will remove the playlist, but not the tabs inside it.`)) {
+      return;
+    }
+
+    try {
+      await deletePlaylist(playlist.id);
+      navigate("/profile");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not delete playlist.");
+    }
+  }
+
   if (!playlist && loading) {
     return (
       <main className="page-grid">
@@ -101,7 +116,12 @@ export function PlaylistDetailPage() {
             <Star size={18} />
             {playlist.savedByCurrentUser ? "Saved" : "Save playlist"}
           </button>
-        ) : null}
+        ) : (
+          <button className="btn ghost danger" onClick={removePlaylist}>
+            <Trash2 size={18} />
+            Delete playlist
+          </button>
+        )}
       </section>
 
       {error ? <div className="form-error">{error}</div> : null}
