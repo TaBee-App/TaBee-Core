@@ -38,15 +38,21 @@ public final class UserDtos {
             String username,
             String email,
             String fullName,
+            boolean emailConfirmed,
+            String profileImageUrl,
+            OffsetDateTime usernameUpdatedAt,
             OffsetDateTime createdAt,
             OffsetDateTime updatedAt
     ) {
-        public static UserResponse from(User user) {
+        public static UserResponse from(User user, String profileImageUrl) {
             return new UserResponse(
                     user.getId(),
                     user.getUsername(),
                     user.getEmail(),
                     user.getFullName(),
+                    user.isEmailConfirmed(),
+                    profileImageUrl,
+                    user.getUsernameUpdatedAt(),
                     user.getCreatedAt(),
                     user.getUpdatedAt()
             );
@@ -57,22 +63,44 @@ public final class UserDtos {
             Long id,
             String username,
             String fullName,
+            String profileImageUrl,
             OffsetDateTime createdAt,
             boolean followedByCurrentUser,
             long followerCount,
             long followingCount
     ) {
-        public static PublicUserResponse from(User user, boolean followedByCurrentUser,
+        public static PublicUserResponse from(User user, String profileImageUrl, boolean followedByCurrentUser,
                                               long followerCount, long followingCount) {
             return new PublicUserResponse(
                     user.getId(),
                     user.getUsername(),
                     user.getFullName(),
+                    profileImageUrl,
                     user.getCreatedAt(),
                     followedByCurrentUser,
                     followerCount,
                     followingCount
             );
         }
+    }
+
+    public record EmailUpdateCodeRequest(
+            @NotBlank @Email String email,
+            @NotBlank @Size(min = 6, max = 100) String currentPassword
+    ) {
+    }
+
+    public record EmailUpdateCodeResponse(
+            String message,
+            String devCode
+    ) {
+    }
+
+    public record EmailUpdateConfirmRequest(
+            @NotBlank @Email String email,
+            @NotBlank @Size(min = 6, max = 100) String currentPassword,
+            @NotBlank @jakarta.validation.constraints.Pattern(regexp = "\\d{6}", message = "Verification code must be 6 digits")
+            String verificationCode
+    ) {
     }
 }

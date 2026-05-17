@@ -8,7 +8,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.multipart.MultipartFile;
 
+import com.tabee.backend.common.ImageStorageService;
 import com.tabee.backend.playlist.PlaylistDtos.PlaylistRequest;
 import com.tabee.backend.tab.Tab;
 import com.tabee.backend.tab.TabService;
@@ -21,17 +23,20 @@ public class PlaylistService {
     private final SavedPlaylistRepository savedPlaylistRepository;
     private final TabService tabService;
     private final EntityManager entityManager;
+    private final ImageStorageService imageStorageService;
 
     public PlaylistService(UserPlaylistRepository playlistRepository,
                            PlaylistTabRepository playlistTabRepository,
                            SavedPlaylistRepository savedPlaylistRepository,
                            TabService tabService,
-                           EntityManager entityManager) {
+                           EntityManager entityManager,
+                           ImageStorageService imageStorageService) {
         this.playlistRepository = playlistRepository;
         this.playlistTabRepository = playlistTabRepository;
         this.savedPlaylistRepository = savedPlaylistRepository;
         this.tabService = tabService;
         this.entityManager = entityManager;
+        this.imageStorageService = imageStorageService;
     }
 
     @Transactional(readOnly = true)
@@ -42,6 +47,11 @@ public class PlaylistService {
     @Transactional(readOnly = true)
     public List<UserPlaylist> findArchive() {
         return playlistRepository.findAllByOrderByCreatedAtDesc();
+    }
+
+    @Transactional(readOnly = true)
+    public List<UserPlaylist> findDiscoveryArchive() {
+        return playlistRepository.findTop10ByOrderByCreatedAtDesc();
     }
 
     @Transactional(readOnly = true)
@@ -90,7 +100,37 @@ public class PlaylistService {
 
     @Transactional
     public void delete(User owner, Long id) {
-        playlistRepository.delete(findById(owner, id));
+        UserPlaylist playlist = findById(owner, id);
+        imageStorageService.deleteQuietly(playlist.getCoverImageFilename());
+        playlistRepository.delete(playlist);
+    }
+
+    @Transactional
+    public UserPlaylist updateCoverImage(User owner, Long id, MultipartFile file) {
+        UserPlaylist playlist = findById(owner, id);
+        String previous = playlist.getCoverImageFilename();
+        playlist.setCoverImageFilename(imageStorageService.store(file, "playlist-" + playlist.getId()));
+        UserPlaylist saved = playlistRepository.save(playlist);
+        imageStorageService.deleteQuietly(previous);
+        return saved;
+    }
+
+    @Transactional
+    public UserPlaylist removeCoverImage(User owner, Long id) {
+        UserPlaylist playlist = findById(owner, id);
+        String previous = playlist.getCoverImageFilename();
+        playlist.setCoverImageFilename(null);
+        UserPlaylist saved = playlistRepository.save(playlist);
+        imageStorageService.deleteQuietly(previous);
+        return saved;
+    }
+
+    public String coverImageUrl(UserPlaylist playlist) {
+        return imageStorageService.url(playlist.getCoverImageFilename());
+    }
+
+    public String ownerProfileImageUrl(UserPlaylist playlist) {
+        return imageStorageService.url(playlist.getOwner().getProfileImageFilename());
     }
 
     @Transactional

@@ -81,6 +81,7 @@ data/
 !.env.example
 !backend/.env.example
 backend/uploads/
+backend/media/
 
 # =========================
 # Misc

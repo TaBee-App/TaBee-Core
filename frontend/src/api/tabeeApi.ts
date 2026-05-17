@@ -14,6 +14,9 @@ export async function generateTab(request: GenerateTabRequest): Promise<Generate
   if (request.instrument !== "bass") {
     throw new Error("The connected backend pipeline currently supports bass recordings only.");
   }
+  if (!isSupportedAudioFile(request.file)) {
+    throw new Error("Unsupported file format. Please upload a .wav, .mp3, or .mp4 file.");
+  }
 
   const formData = new FormData();
   formData.append("file", request.file);
@@ -36,6 +39,11 @@ export async function generateTab(request: GenerateTabRequest): Promise<Generate
   return toGeneratedTab(tab, request.file.name);
 }
 
+function isSupportedAudioFile(file: File) {
+  const filename = file.name.toLowerCase();
+  return filename.endsWith(".wav") || filename.endsWith(".mp3") || filename.endsWith(".mp4");
+}
+
 export async function listTabs(): Promise<GeneratedTab[]> {
   const tabs = await apiFetch<TabResponse[]>("/api/tabs");
   return tabs.map((tab) => toGeneratedTab(tab));
@@ -48,6 +56,11 @@ export async function listFavoriteTabs(): Promise<GeneratedTab[]> {
 
 export async function listPublicTabs(): Promise<GeneratedTab[]> {
   const tabs = await apiFetch<TabResponse[]>("/api/tabs/public");
+  return tabs.map((tab) => toGeneratedTab(tab, "uploaded-audio", true));
+}
+
+export async function listDiscoveryTabs(): Promise<GeneratedTab[]> {
+  const tabs = await apiFetch<TabResponse[]>("/api/tabs/discovery");
   return tabs.map((tab) => toGeneratedTab(tab, "uploaded-audio", true));
 }
 
@@ -102,6 +115,10 @@ export async function listPlaylistArchive(): Promise<PlaylistResponse[]> {
   return apiFetch<PlaylistResponse[]>("/api/playlists/archive");
 }
 
+export async function listDiscoveryPlaylists(): Promise<PlaylistResponse[]> {
+  return apiFetch<PlaylistResponse[]>("/api/playlists/discovery");
+}
+
 export async function listPlaylistArchiveByUser(userId: string): Promise<PlaylistResponse[]> {
   const playlists = await listPlaylistArchive();
   return playlists.filter((playlist) => String(playlist.ownerUserId) === userId);
@@ -119,6 +136,21 @@ export async function createPlaylist(request: PlaylistRequest): Promise<Playlist
   return apiFetch<PlaylistResponse>("/api/playlists", {
     method: "POST",
     body: JSON.stringify(request)
+  });
+}
+
+export async function updatePlaylistCover(playlistId: number, file: File): Promise<PlaylistResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+  return apiFetch<PlaylistResponse>(`/api/playlists/${playlistId}/cover-image`, {
+    method: "POST",
+    body: formData
+  });
+}
+
+export async function removePlaylistCover(playlistId: number): Promise<PlaylistResponse> {
+  return apiFetch<PlaylistResponse>(`/api/playlists/${playlistId}/cover-image`, {
+    method: "DELETE"
   });
 }
 
@@ -159,6 +191,7 @@ function toGeneratedTab(tab: TabResponse, uploadedFileName = "uploaded-audio", p
     id: String(tab.id),
     ownerUserId: tab.ownerUserId,
     ownerUsername: tab.ownerUsername,
+    ownerProfileImageUrl: tab.ownerProfileImageUrl,
     title: tab.title,
     fileName: sourceFileName(jsonData.sourceAudio) || uploadedFileName,
     instrument: jsonData.instrument || "bass",

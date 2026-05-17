@@ -12,6 +12,7 @@ import {
   updateGeneratedTab
 } from "../api/tabeeApi";
 import { PlayerBar } from "../components/PlayerBar";
+import { Avatar } from "../components/Avatar";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { TabRenderer } from "../components/TabRenderer";
 import { errorMessage } from "../lib/errors";
@@ -253,7 +254,7 @@ export function TabViewerPage() {
       <main className="viewer-page">
         <div className="empty-panel">
           <h2>Loading tab</h2>
-          <p>Fetching the saved project from the backend.</p>
+          <p>Preparing your saved tab.</p>
         </div>
       </main>
     );
@@ -277,7 +278,6 @@ export function TabViewerPage() {
         <section className="score-panel">
           <div className="score-header">
             <div>
-              <p className="score-kicker">Generated score</p>
               {editing ? (
                 <div className="metadata-editor">
                   <label className="metadata-field wide">
@@ -319,7 +319,8 @@ export function TabViewerPage() {
                   </p>
                   {tab.ownerUserId && tab.ownerUsername ? (
                     <Link className="creator-pill" to={`/users/${tab.ownerUserId}`}>
-                      Created by @{tab.ownerUsername}
+                      <Avatar src={tab.ownerProfileImageUrl} label={tab.ownerUsername} size="sm" />
+                      {tab.createdByCurrentUser ? "Created by me" : `Created by @${tab.ownerUsername}`}
                     </Link>
                   ) : null}
                   <span className="favorite-count-pill">

@@ -2,11 +2,13 @@ import { Clock, Compass, ListMusic, Music, Star, UserRound } from "lucide-react"
 import type React from "react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { searchUsers } from "../api/authApi";
+import { listDiscoveryUsers } from "../api/authApi";
+import { Avatar } from "../components/Avatar";
+import { PlaylistCover } from "../components/PlaylistCover";
 import {
   favoriteTab,
-  listPlaylistArchive,
-  listPublicTabs,
+  listDiscoveryPlaylists,
+  listDiscoveryTabs,
   savePlaylist,
   unfavoriteTab,
   unsavePlaylist
@@ -15,7 +17,7 @@ import { errorMessage } from "../lib/errors";
 import type { PublicUserProfile } from "../types/auth";
 import type { GeneratedTab, PlaylistResponse } from "../types/tab";
 
-type DiscoveryMode = "forYou" | "tabs" | "playlists" | "creators";
+type DiscoveryMode = "forYou" | "tabs" | "playlists" | "users";
 type SortMode = "favorites" | "recent" | "mostTabs";
 
 export function DiscoveryPage() {
@@ -23,7 +25,7 @@ export function DiscoveryPage() {
   const [sortMode, setSortMode] = useState<SortMode>("favorites");
   const [playlists, setPlaylists] = useState<PlaylistResponse[]>([]);
   const [tabs, setTabs] = useState<GeneratedTab[]>([]);
-  const [creators, setCreators] = useState<PublicUserProfile[]>([]);
+  const [users, setUsers] = useState<PublicUserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -50,8 +52,8 @@ export function DiscoveryPage() {
   }, [sortMode, tabs]);
 
   const suggestedCreators = useMemo(() => {
-    return [...creators].sort((left, right) => right.followerCount - left.followerCount);
-  }, [creators]);
+    return [...users].sort((left, right) => right.followerCount - left.followerCount);
+  }, [users]);
 
   useEffect(() => {
     let active = true;
@@ -60,15 +62,15 @@ export function DiscoveryPage() {
       setLoading(true);
       setError("");
       try {
-        const [nextPlaylists, nextTabs, nextCreators] = await Promise.all([
-          listPlaylistArchive(),
-          listPublicTabs(),
-          searchUsers("")
+        const [nextPlaylists, nextTabs, nextUsers] = await Promise.all([
+          listDiscoveryPlaylists(),
+          listDiscoveryTabs(),
+          listDiscoveryUsers()
         ]);
         if (!active) return;
         setPlaylists(nextPlaylists);
         setTabs(nextTabs);
-        setCreators(nextCreators);
+        setUsers(nextUsers);
       } catch (caught) {
         if (active) {
           setError(errorMessage(caught, "Could not load discovery."));
@@ -114,17 +116,17 @@ export function DiscoveryPage() {
         <div>
           <p className="eyebrow">Discovery</p>
           <h2>Browse what the TaBee community is playing.</h2>
-          <p>Jump through tabs, playlist collections, and creators without doing an exact search.</p>
+          <p>Jump through tabs, playlist collections, and users without doing an exact search.</p>
         </div>
         <div className="playlist-stat">
           <Compass size={22} />
-          <span>{loading ? "Loading..." : `${tabs.length} tabs / ${playlists.length} playlists / ${creators.length} creators`}</span>
+          <span>{loading ? "Preparing picks..." : `${tabs.length} tabs / ${playlists.length} playlists / ${users.length} users`}</span>
         </div>
       </section>
 
       <section className="library-panel discovery-panel">
         <div className="discovery-mode-tabs">
-          {(["forYou", "tabs", "playlists", "creators"] as DiscoveryMode[]).map((nextMode) => (
+          {(["forYou", "tabs", "playlists", "users"] as DiscoveryMode[]).map((nextMode) => (
             <button className={mode === nextMode ? "active" : ""} key={nextMode} onClick={() => setMode(nextMode)}>
               {iconForMode(nextMode)}
               {labelForMode(nextMode)}
@@ -132,7 +134,7 @@ export function DiscoveryPage() {
           ))}
         </div>
 
-        {mode !== "forYou" && mode !== "creators" ? (
+        {mode !== "forYou" && mode !== "users" ? (
           <div className="archive-tabs">
             <button className={sortMode === "favorites" ? "active" : ""} onClick={() => setSortMode("favorites")}>
               <Star size={17} />
@@ -155,18 +157,18 @@ export function DiscoveryPage() {
 
         {mode === "forYou" ? (
           <>
-            <DiscoveryRail title="Tabs picked for you" subtitle={`${sortedTabs.length} public tabs`}>
-              {sortedTabs.slice(0, 8).map((tab) => (
+            <DiscoveryRail title="Tabs picked for you" subtitle={`${sortedTabs.length} suggested tabs`}>
+              {sortedTabs.slice(0, 10).map((tab) => (
                 <TabDiscoveryCard tab={tab} key={tab.id} onToggleFavorite={toggleFavorite} />
               ))}
             </DiscoveryRail>
-            <DiscoveryRail title="Playlist collections" subtitle={`${sortedPlaylists.length} community playlists`}>
-              {sortedPlaylists.slice(0, 8).map((playlist) => (
+            <DiscoveryRail title="Playlist collections" subtitle={`${sortedPlaylists.length} suggested playlists`}>
+              {sortedPlaylists.slice(0, 10).map((playlist) => (
                 <PlaylistDiscoveryCard playlist={playlist} key={playlist.id} onToggleSave={toggleSave} />
               ))}
             </DiscoveryRail>
-            <DiscoveryRail title="Creators to follow" subtitle={`${suggestedCreators.length} people`}>
-              {suggestedCreators.slice(0, 8).map((creator) => (
+            <DiscoveryRail title="Users to follow" subtitle={`${suggestedCreators.length} suggested users`}>
+              {suggestedCreators.slice(0, 10).map((creator) => (
                 <CreatorDiscoveryCard creator={creator} key={creator.id} />
               ))}
             </DiscoveryRail>
@@ -174,7 +176,7 @@ export function DiscoveryPage() {
         ) : null}
 
         {mode === "tabs" ? (
-          <DiscoveryGrid title="Tabs" subtitle={loading ? "Loading tabs..." : `${sortedTabs.length} public tabs`}>
+          <DiscoveryGrid title="Tabs" subtitle={loading ? "Preparing tabs..." : `${sortedTabs.length} suggested tabs`}>
             {sortedTabs.map((tab) => (
               <TabDiscoveryCard tab={tab} key={tab.id} onToggleFavorite={toggleFavorite} />
             ))}
@@ -182,15 +184,15 @@ export function DiscoveryPage() {
         ) : null}
 
         {mode === "playlists" ? (
-          <DiscoveryGrid title="Playlists" subtitle={loading ? "Loading playlists..." : `${sortedPlaylists.length} playlists / ${totalPlaylistTabs} tabs`}>
+          <DiscoveryGrid title="Playlists" subtitle={loading ? "Preparing playlists..." : `${sortedPlaylists.length} suggested playlists / ${totalPlaylistTabs} tabs`}>
             {sortedPlaylists.map((playlist) => (
               <PlaylistDiscoveryCard playlist={playlist} key={playlist.id} onToggleSave={toggleSave} />
             ))}
           </DiscoveryGrid>
         ) : null}
 
-        {mode === "creators" ? (
-          <DiscoveryGrid title="Creators" subtitle={loading ? "Loading creators..." : `${suggestedCreators.length} suggested creators`}>
+        {mode === "users" ? (
+          <DiscoveryGrid title="Users" subtitle={loading ? "Preparing users..." : `${suggestedCreators.length} suggested users`}>
             {suggestedCreators.map((creator) => (
               <CreatorDiscoveryCard creator={creator} key={creator.id} />
             ))}
@@ -261,7 +263,7 @@ function PlaylistDiscoveryCard({ playlist, onToggleSave }: { playlist: PlaylistR
     <article className="discovery-card playlist-discovery-card">
       <Link to={`/playlists/${playlist.id}`}>
         <div className="discovery-art playlist-art">
-          <ListMusic size={28} />
+          <PlaylistCover src={playlist.coverImageUrl} title={playlist.name} size="lg" />
         </div>
         <strong>{playlist.name}</strong>
         <span>by @{playlist.ownerUsername} / {playlist.tabs.length} tabs</span>
@@ -289,7 +291,7 @@ function CreatorDiscoveryCard({ creator }: { creator: PublicUserProfile }) {
     <article className="discovery-card creator-discovery-card">
       <Link to={`/users/${creator.id}`}>
         <div className="discovery-art creator-art">
-          <UserRound size={28} />
+          <Avatar src={creator.profileImageUrl} label={creator.username} size="lg" />
         </div>
         <strong>{creator.fullName || creator.username}</strong>
         <span>@{creator.username} / {creator.followerCount} followers</span>
@@ -301,14 +303,14 @@ function CreatorDiscoveryCard({ creator }: { creator: PublicUserProfile }) {
 function iconForMode(mode: DiscoveryMode) {
   if (mode === "tabs") return <Music size={17} />;
   if (mode === "playlists") return <ListMusic size={17} />;
-  if (mode === "creators") return <UserRound size={17} />;
+  if (mode === "users") return <UserRound size={17} />;
   return <Compass size={17} />;
 }
 
 function labelForMode(mode: DiscoveryMode) {
   if (mode === "tabs") return "Tabs";
   if (mode === "playlists") return "Playlists";
-  if (mode === "creators") return "Creators";
+  if (mode === "users") return "Users";
   return "For You";
 }
 

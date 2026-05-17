@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { logout } from "../api/authApi";
 import { getCurrentUser } from "../api/authSession";
+import { Avatar } from "./Avatar";
 import type { UserProfile } from "../types/auth";
 
 export function AppShell() {
@@ -33,7 +34,7 @@ export function AppShell() {
       <header className="topbar">
         <div className="topbar-inner">
           <NavLink to="/" className="brand" aria-label="TaBee dashboard">
-            <div className="brand-mark">T</div>
+            <img className="brand-mark" src="/tabee-logo.png" alt="" />
             <div>
               <h1 className="brand-title">TaBee</h1>
               <p className="brand-subtitle">Audio to playable tablature</p>
@@ -57,7 +58,7 @@ export function AppShell() {
 
           <div className="account-menu">
             <button className="account-trigger" title="Account" onClick={() => setAccountOpen((current) => !current)}>
-              <UserRound size={17} />
+              <Avatar src={currentUser?.profileImageUrl} label={currentUser?.username} size="sm" />
               <span>{currentUser?.username || "Profile"}</span>
             </button>
             {accountOpen ? (

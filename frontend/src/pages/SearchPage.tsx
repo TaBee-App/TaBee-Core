@@ -5,6 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { followUser, searchUsers, unfollowUser } from "../api/authApi";
 import { listPlaylistArchive, listPublicTabs } from "../api/tabeeApi";
+import { Avatar } from "../components/Avatar";
+import { PlaylistCover } from "../components/PlaylistCover";
 import { errorMessage } from "../lib/errors";
 import type { PublicUserProfile } from "../types/auth";
 import type { GeneratedTab, PlaylistResponse } from "../types/tab";
@@ -96,7 +98,7 @@ export function SearchPage() {
     const normalized = submittedQuery.trim().toLowerCase();
     if (!normalized) return [];
     return playlists.filter((playlist) =>
-      `${playlist.name} ${playlist.description || ""} ${playlist.ownerUsername} ${playlist.tabs.map((tab) => tab.title).join(" ")}`
+      `${playlist.name} ${playlist.description || ""} ${playlist.ownerUsername}`
         .toLowerCase()
         .includes(normalized)
     );
@@ -165,7 +167,7 @@ export function SearchPage() {
         {!hasSearched ? (
           <div className="empty-panel compact">
             <h3>Search TaBee</h3>
-            <p>Enter a word, username, playlist name, artist, or file title, then press Enter.</p>
+            <p>Enter a tab, playlist, or @username, then press Enter.</p>
           </div>
         ) : null}
 
@@ -204,12 +206,12 @@ export function SearchPage() {
           >
             {filteredPlaylists.map((playlist) => (
               <article className="playlist-card search-result-row playlist-result-row" key={playlist.id}>
-                <div className="playlist-card-header">
-                  <Link to={`/playlists/${playlist.id}`}>
-                    <h3>{playlist.name}</h3>
-                    <p>by {playlist.ownerUsername} / {playlist.description || `${playlist.tabs.length} tabs`}</p>
-                  </Link>
-                </div>
+                <PlaylistCover src={playlist.coverImageUrl} title={playlist.name} size="sm" />
+                <Link className="playlist-result-copy" to={`/playlists/${playlist.id}`}>
+                  <h3>{playlist.name}</h3>
+                  <p>by @{playlist.ownerUsername}</p>
+                  <small>{playlist.description || `${playlist.tabs.length} tabs`}</small>
+                </Link>
               </article>
             ))}
           </SearchSection>
@@ -227,6 +229,7 @@ export function SearchPage() {
           >
             {users.map((user) => (
               <article className="profile-user-row search-result-row user-result-row" key={user.id}>
+                <Avatar src={user.profileImageUrl} label={user.username} size="md" />
                 <Link to={`/users/${user.id}`}>
                   <span>{user.fullName || user.username}</span>
                   <small>@{user.username} / {user.followerCount} followers / {user.followingCount} following</small>

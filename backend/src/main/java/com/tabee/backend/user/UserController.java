@@ -12,10 +12,16 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.tabee.backend.security.CurrentUser;
 import com.tabee.backend.user.UserDtos.PublicUserResponse;
+import com.tabee.backend.user.UserDtos.EmailUpdateCodeRequest;
+import com.tabee.backend.user.UserDtos.EmailUpdateCodeResponse;
+import com.tabee.backend.user.UserDtos.EmailUpdateConfirmRequest;
 import com.tabee.backend.user.UserDtos.UserDeleteRequest;
 import com.tabee.backend.user.UserDtos.UserResponse;
 import com.tabee.backend.user.UserDtos.UserUpdateRequest;
@@ -33,7 +39,8 @@ public class UserController {
 
     @GetMapping("/me")
     public UserResponse me(@AuthenticationPrincipal User user) {
-        return UserResponse.from(currentUser.require(user));
+        User current = currentUser.require(user);
+        return UserResponse.from(current, userService.profileImageUrl(current));
     }
 
     @GetMapping("/search")
@@ -41,6 +48,15 @@ public class UserController {
                                                      @org.springframework.web.bind.annotation.RequestParam String q) {
         User current = currentUser.require(user);
         return userService.search(q).stream()
+                .filter(found -> !found.getId().equals(current.getId()))
+                .map(found -> publicUserResponse(current, found))
+                .toList();
+    }
+
+    @GetMapping("/discovery")
+    public java.util.List<PublicUserResponse> discoveryUsers(@AuthenticationPrincipal User user) {
+        User current = currentUser.require(user);
+        return userService.findDiscoveryUsers().stream()
                 .filter(found -> !found.getId().equals(current.getId()))
                 .map(found -> publicUserResponse(current, found))
                 .toList();
@@ -84,6 +100,7 @@ public class UserController {
         return userService.findFollowers(current).stream()
                 .map(follow -> PublicUserResponse.from(
                         follow.getFollower(),
+                        userService.profileImageUrl(follow.getFollower()),
                         userService.isFollowing(current, follow.getFollower().getId()),
                         userService.followerCount(follow.getFollower().getId()),
                         userService.followingCount(follow.getFollower().getId())
@@ -111,7 +128,33 @@ public class UserController {
 
     @PutMapping("/me")
     public UserResponse updateMe(@AuthenticationPrincipal User user, @Valid @RequestBody UserUpdateRequest request) {
-        return UserResponse.from(userService.update(currentUser.require(user).getId(), request));
+        User updated = userService.update(currentUser.require(user).getId(), request);
+        return UserResponse.from(updated, userService.profileImageUrl(updated));
+    }
+
+    @PostMapping(value = "/me/profile-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public UserResponse updateProfileImage(@AuthenticationPrincipal User user, @ModelAttribute ProfileImageUploadRequest request) {
+        User updated = userService.updateProfileImage(currentUser.require(user), request.file());
+        return UserResponse.from(updated, userService.profileImageUrl(updated));
+    }
+
+    @DeleteMapping("/me/profile-image")
+    public UserResponse removeProfileImage(@AuthenticationPrincipal User user) {
+        User updated = userService.removeProfileImage(currentUser.require(user));
+        return UserResponse.from(updated, userService.profileImageUrl(updated));
+    }
+
+    @PostMapping("/me/email/code")
+    public EmailUpdateCodeResponse requestEmailUpdateCode(@AuthenticationPrincipal User user,
+                                                          @Valid @RequestBody EmailUpdateCodeRequest request) {
+        return userService.requestEmailUpdateCode(currentUser.require(user).getId(), request);
+    }
+
+    @PostMapping("/me/email/confirm")
+    public UserResponse confirmEmailUpdate(@AuthenticationPrincipal User user,
+                                           @Valid @RequestBody EmailUpdateConfirmRequest request) {
+        User updated = userService.confirmEmailUpdate(currentUser.require(user).getId(), request);
+        return UserResponse.from(updated, userService.profileImageUrl(updated));
     }
 
     @DeleteMapping("/me")
@@ -123,9 +166,13 @@ public class UserController {
     private PublicUserResponse publicUserResponse(User current, User viewed) {
         return PublicUserResponse.from(
                 viewed,
+                userService.profileImageUrl(viewed),
                 userService.isFollowing(current, viewed.getId()),
                 userService.followerCount(viewed.getId()),
                 userService.followingCount(viewed.getId())
         );
+    }
+
+    public record ProfileImageUploadRequest(MultipartFile file) {
     }
 }

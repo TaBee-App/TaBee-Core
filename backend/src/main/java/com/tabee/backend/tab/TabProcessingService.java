@@ -5,6 +5,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Locale;
+import java.util.Set;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -21,6 +23,19 @@ import com.tabee.backend.user.User;
 
 @Service
 public class TabProcessingService {
+    private static final Set<String> ALLOWED_EXTENSIONS = Set.of(".wav", ".mp4", ".mp3");
+    private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
+            "audio/wav",
+            "audio/x-wav",
+            "audio/wave",
+            "audio/vnd.wave",
+            "audio/mpeg",
+            "audio/mp3",
+            "video/mp4",
+            "audio/mp4",
+            "application/octet-stream"
+    );
+
     private final TabService tabService;
     private final TabAudioStorage tabAudioStorage;
     private final ObjectMapper objectMapper;
@@ -46,6 +61,8 @@ public class TabProcessingService {
         if (audioFile == null || audioFile.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Audio file is required");
         }
+
+        validateSupportedAudioFile(audioFile);
 
         Path outputDir;
         try {
@@ -160,6 +177,23 @@ public class TabProcessingService {
             return "upload.wav";
         }
         return Path.of(filename).getFileName().toString().replaceAll("[^A-Za-z0-9._-]", "_");
+    }
+
+    private void validateSupportedAudioFile(MultipartFile audioFile) {
+        String filename = audioFile.getOriginalFilename() == null ? "" : audioFile.getOriginalFilename();
+        String lowercaseFilename = filename.toLowerCase(Locale.ROOT);
+        boolean supportedExtension = ALLOWED_EXTENSIONS.stream().anyMatch(lowercaseFilename::endsWith);
+
+        String contentType = audioFile.getContentType();
+        boolean supportedContentType = contentType == null || contentType.isBlank()
+                || ALLOWED_CONTENT_TYPES.contains(contentType.toLowerCase(Locale.ROOT));
+
+        if (!supportedExtension || !supportedContentType) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Unsupported file format. Please upload a .wav, .mp3, or .mp4 file."
+            );
+        }
     }
 
     private void deleteQuietly(Path directory) {

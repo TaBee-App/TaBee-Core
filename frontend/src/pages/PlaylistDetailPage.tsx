@@ -1,8 +1,18 @@
-import { Star, Trash2 } from "lucide-react";
+import { ImagePlus, Star, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { deletePlaylist, getPlaylist, removeTabFromPlaylist, savePlaylist, unsavePlaylist } from "../api/tabeeApi";
+import {
+  deletePlaylist,
+  getPlaylist,
+  removePlaylistCover,
+  removeTabFromPlaylist,
+  savePlaylist,
+  unsavePlaylist,
+  updatePlaylistCover
+} from "../api/tabeeApi";
+import { Avatar } from "../components/Avatar";
 import { ConfirmDialog } from "../components/ConfirmDialog";
+import { PlaylistCover } from "../components/PlaylistCover";
 import { errorMessage } from "../lib/errors";
 import type { PlaylistResponse } from "../types/tab";
 
@@ -14,6 +24,7 @@ export function PlaylistDetailPage() {
   const [deletingPlaylist, setDeletingPlaylist] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [removingTabId, setRemovingTabId] = useState<number | null>(null);
+  const [updatingCover, setUpdatingCover] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -82,12 +93,43 @@ export function PlaylistDetailPage() {
     }
   }
 
+  async function changeCover(file: File | undefined) {
+    if (!playlist || !playlist.createdByCurrentUser || !file) return;
+    if (!["image/png", "image/jpeg"].includes(file.type)) {
+      setError("Playlist cover must be a PNG or JPEG image.");
+      return;
+    }
+
+    setUpdatingCover(true);
+    setError("");
+    try {
+      setPlaylist(await updatePlaylistCover(playlist.id, file));
+    } catch (caught) {
+      setError(errorMessage(caught, "Could not update playlist cover."));
+    } finally {
+      setUpdatingCover(false);
+    }
+  }
+
+  async function deleteCover() {
+    if (!playlist || !playlist.createdByCurrentUser) return;
+    setUpdatingCover(true);
+    setError("");
+    try {
+      setPlaylist(await removePlaylistCover(playlist.id));
+    } catch (caught) {
+      setError(errorMessage(caught, "Could not remove playlist cover."));
+    } finally {
+      setUpdatingCover(false);
+    }
+  }
+
   if (!playlist && loading) {
     return (
       <main className="page-grid">
         <div className="empty-panel">
           <h2>Loading playlist</h2>
-          <p>Fetching playlist details.</p>
+          <p>Preparing the playlist page.</p>
         </div>
       </main>
     );
@@ -107,13 +149,19 @@ export function PlaylistDetailPage() {
   return (
     <main className="page-grid">
       <section className="library-hero">
+        <div className="playlist-hero-cover">
+          <PlaylistCover src={playlist.coverImageUrl} title={playlist.name} size="md" />
+        </div>
         <div>
           <p className="eyebrow">{playlist.createdByCurrentUser ? "Created by you" : "Created by"}</p>
           <h2>{playlist.name}</h2>
           <p>
             {!playlist.createdByCurrentUser ? (
               <>
-                <Link className="inline-link" to={`/users/${playlist.ownerUserId}`}>@{playlist.ownerUsername}</Link>
+                <Link className="inline-link owner-inline" to={`/users/${playlist.ownerUserId}`}>
+                  <Avatar src={playlist.ownerProfileImageUrl} label={playlist.ownerUsername} size="sm" />
+                  @{playlist.ownerUsername}
+                </Link>
                 {" / "}
               </>
             ) : null}
@@ -127,17 +175,38 @@ export function PlaylistDetailPage() {
             <span className="favorite-count-pill">Created {formatPlaylistDate(playlist.createdAt)}</span>
           </div>
         </div>
-        {!playlist.createdByCurrentUser ? (
-          <button className={`btn ${playlist.savedByCurrentUser ? "ghost" : "primary"}`} onClick={toggleSave}>
-            <Star size={18} />
-            {playlist.savedByCurrentUser ? "Saved" : "Save playlist"}
-          </button>
-        ) : (
-          <button className="btn ghost danger" onClick={() => setDeleteConfirmOpen(true)}>
-            <Trash2 size={18} />
-            Delete playlist
-          </button>
-        )}
+        <div className="playlist-detail-actions">
+          {playlist.createdByCurrentUser ? (
+            <>
+              <div className="playlist-cover-tools">
+                <label className={`btn ghost ${updatingCover ? "disabled" : ""}`}>
+                  <ImagePlus size={18} />
+                  Change cover
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg"
+                    disabled={updatingCover}
+                    onChange={(event) => changeCover(event.target.files?.[0])}
+                  />
+                </label>
+                {playlist.coverImageUrl ? (
+                  <button className="btn ghost" disabled={updatingCover} onClick={deleteCover}>
+                    Remove cover
+                  </button>
+                ) : null}
+              </div>
+              <button className="btn ghost danger" onClick={() => setDeleteConfirmOpen(true)}>
+                <Trash2 size={18} />
+                Delete playlist
+              </button>
+            </>
+          ) : (
+            <button className={`btn ${playlist.savedByCurrentUser ? "ghost" : "primary"}`} onClick={toggleSave}>
+              <Star size={18} />
+              {playlist.savedByCurrentUser ? "Saved" : "Save playlist"}
+            </button>
+          )}
+        </div>
       </section>
 
       {error ? <div className="form-error">{error}</div> : null}

@@ -15,14 +15,17 @@ export interface UserProfile {
   username: string;
   email: string;
   fullName?: string | null;
+  profileImageUrl?: string | null;
   createdAt?: string;
   updatedAt?: string;
+  usernameUpdatedAt?: string | null;
 }
 
 export interface PublicUserProfile {
   id: number;
   username: string;
   fullName?: string | null;
+  profileImageUrl?: string | null;
   createdAt?: string;
   followedByCurrentUser: boolean;
   followerCount: number;
@@ -45,6 +48,34 @@ export interface RegisterRequest {
   email: string;
   password: string;
   fullName?: string;
+  verificationCode: string;
+}
+
+export interface RegisterCodeRequest {
+  username: string;
+  email: string;
+  password: string;
+  fullName?: string;
+}
+
+export interface RegisterCodeResponse {
+  message: string;
+  devCode?: string | null;
+}
+
+export interface PasswordResetCodeRequest {
+  email: string;
+}
+
+export interface PasswordResetCodeResponse {
+  message: string;
+  devCode?: string | null;
+}
+
+export interface PasswordResetConfirmRequest {
+  email: string;
+  verificationCode: string;
+  newPassword: string;
 }
 
 export interface UserUpdateRequest {
@@ -53,6 +84,22 @@ export interface UserUpdateRequest {
   email?: string;
   password?: string;
   fullName?: string;
+}
+
+export interface EmailUpdateCodeRequest {
+  email: string;
+  currentPassword: string;
+}
+
+export interface EmailUpdateCodeResponse {
+  message: string;
+  devCode?: string | null;
+}
+
+export interface EmailUpdateConfirmRequest {
+  email: string;
+  currentPassword: string;
+  verificationCode: string;
 }
 
 export interface DeleteAccountRequest {

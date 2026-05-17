@@ -34,6 +34,7 @@ public final class TabDtos {
             Long id,
             Long ownerUserId,
             String ownerUsername,
+            String ownerProfileImageUrl,
             Long tabDataId,
             String title,
             String artist,
@@ -47,18 +48,24 @@ public final class TabDtos {
             JsonNode jsonData
     ) {
         public static TabResponse from(Tab tab) {
-            return from(tab, null, false, 0);
+            return from(tab, null, false, 0, null);
         }
 
         public static TabResponse from(Tab tab, Long currentUserId, boolean favoritedByCurrentUser) {
-            return from(tab, currentUserId, favoritedByCurrentUser, 0);
+            return from(tab, currentUserId, favoritedByCurrentUser, 0, null);
         }
 
         public static TabResponse from(Tab tab, Long currentUserId, boolean favoritedByCurrentUser, long favoriteCount) {
+            return from(tab, currentUserId, favoritedByCurrentUser, favoriteCount, null);
+        }
+
+        public static TabResponse from(Tab tab, Long currentUserId, boolean favoritedByCurrentUser, long favoriteCount,
+                                       String ownerProfileImageUrl) {
             return new TabResponse(
                     tab.getId(),
                     tab.getOwner().getId(),
                     tab.getOwner().getUsername(),
+                    ownerProfileImageUrl,
                     tab.getTabData().getId(),
                     tab.getTitle(),
                     tab.getArtist(),

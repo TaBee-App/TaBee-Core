@@ -44,30 +44,36 @@ public final class PlaylistDtos {
             Long id,
             Long ownerUserId,
             String ownerUsername,
+            String ownerProfileImageUrl,
             String name,
             String description,
+            String coverImageUrl,
             OffsetDateTime createdAt,
             boolean createdByCurrentUser,
             boolean savedByCurrentUser,
             long savedCount,
             List<PlaylistTabResponse> tabs
     ) {
-        public static PlaylistResponse from(UserPlaylist playlist) {
-            return from(playlist, null, false, 0);
+        public static PlaylistResponse from(UserPlaylist playlist, String ownerProfileImageUrl, String coverImageUrl) {
+            return from(playlist, null, false, 0, ownerProfileImageUrl, coverImageUrl);
         }
 
-        public static PlaylistResponse from(UserPlaylist playlist, Long currentUserId, boolean savedByCurrentUser) {
-            return from(playlist, currentUserId, savedByCurrentUser, 0);
+        public static PlaylistResponse from(UserPlaylist playlist, Long currentUserId, boolean savedByCurrentUser,
+                                            String ownerProfileImageUrl, String coverImageUrl) {
+            return from(playlist, currentUserId, savedByCurrentUser, 0, ownerProfileImageUrl, coverImageUrl);
         }
 
-        public static PlaylistResponse from(UserPlaylist playlist, Long currentUserId, boolean savedByCurrentUser, long savedCount) {
+        public static PlaylistResponse from(UserPlaylist playlist, Long currentUserId, boolean savedByCurrentUser,
+                                            long savedCount, String ownerProfileImageUrl, String coverImageUrl) {
             boolean createdByCurrentUser = currentUserId != null && playlist.getOwner().getId().equals(currentUserId);
             return new PlaylistResponse(
                     playlist.getId(),
                     playlist.getOwner().getId(),
                     playlist.getOwner().getUsername(),
+                    ownerProfileImageUrl,
                     playlist.getName(),
                     playlist.getDescription(),
+                    coverImageUrl,
                     playlist.getCreatedAt(),
                     createdByCurrentUser,
                     savedByCurrentUser,

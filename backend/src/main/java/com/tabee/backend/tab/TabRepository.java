@@ -13,6 +13,9 @@ public interface TabRepository extends JpaRepository<Tab, Long> {
     @EntityGraph(attributePaths = {"owner", "tabData"})
     List<Tab> findAllByOrderByCreatedAtDesc();
 
+    @EntityGraph(attributePaths = {"owner", "tabData"})
+    List<Tab> findTop10ByOrderByCreatedAtDesc();
+
     @Override
     @EntityGraph(attributePaths = {"owner", "tabData"})
     Optional<Tab> findById(Long id);

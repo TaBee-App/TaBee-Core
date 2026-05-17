@@ -1,4 +1,4 @@
-import { ChevronDown, Music, Plus, Star, Trash2, UserRound, X } from "lucide-react";
+import { ChevronDown, ImagePlus, Music, Plus, Star, Trash2, X } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { getPublicUser } from "../api/authApi";
@@ -11,9 +11,12 @@ import {
   listPlaylists,
   listSavedPlaylists,
   listTabs,
-  removeTabFromPlaylist
+  removeTabFromPlaylist,
+  updatePlaylistCover
 } from "../api/tabeeApi";
+import { Avatar } from "../components/Avatar";
 import { ConfirmDialog } from "../components/ConfirmDialog";
+import { PlaylistCover } from "../components/PlaylistCover";
 import { getCurrentUser } from "../api/authSession";
 import { errorMessage } from "../lib/errors";
 import { removeTab as removeCachedTab } from "../lib/tabStore";
@@ -36,6 +39,7 @@ export function ProfilePage() {
   const [selectedRemovalPlaylists, setSelectedRemovalPlaylists] = useState<Record<string, string>>({});
   const [playlistName, setPlaylistName] = useState("");
   const [playlistDescription, setPlaylistDescription] = useState("");
+  const [playlistCoverFile, setPlaylistCoverFile] = useState<File | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [creatingPlaylist, setCreatingPlaylist] = useState(false);
@@ -155,11 +159,13 @@ export function ProfilePage() {
         name,
         description: playlistDescription.trim() || null
       });
-      const nextPlaylists = [playlist, ...playlists];
+      const playlistWithCover = playlistCoverFile ? await updatePlaylistCover(playlist.id, playlistCoverFile) : playlist;
+      const nextPlaylists = [playlistWithCover, ...playlists];
       setPlaylists(nextPlaylists);
       setSelectedPlaylists(defaultPlaylistSelections(tabs, nextPlaylists));
       setPlaylistName("");
       setPlaylistDescription("");
+      setPlaylistCoverFile(null);
       setCreateOpen(false);
     } catch (caught) {
       setError(errorMessage(caught, "Could not create playlist."));
@@ -233,9 +239,7 @@ export function ProfilePage() {
     <main className="profile-page">
       <section className="profile-hero">
         <div className="profile-identity">
-          <div className="profile-avatar">
-            <UserRound size={28} />
-          </div>
+          <Avatar src={profileSummary?.profileImageUrl || currentUser?.profileImageUrl} label={currentUser?.username} size="lg" />
           <div className="profile-title-block">
             <p className="eyebrow">Profile</p>
             <h2>{currentUser?.fullName || currentUser?.username || "TaBee user"}</h2>
@@ -277,7 +281,7 @@ export function ProfilePage() {
       {error ? <div className="form-error">{error}</div> : null}
 
       <section className="profile-grid">
-        <div className="profile-panel">
+        <div className={`profile-panel${playlistLayerOpen ? " profile-panel-expanded" : ""}`}>
           <div className="section-header">
             <div>
               <h2>My playlists</h2>
@@ -327,6 +331,7 @@ export function ProfilePage() {
             <div className="profile-list">
               {(playlistLayer === "created" ? playlists : savedPlaylists).map((playlist) => (
                 <article className="profile-playlist-row" key={playlist.id}>
+                  <PlaylistCover src={playlist.coverImageUrl} title={playlist.name} size="sm" />
                   <Link to={`/playlists/${playlist.id}`}>
                     <span>{playlist.name}</span>
                     <small>
@@ -368,7 +373,7 @@ export function ProfilePage() {
           </div> : null}
         </div>
 
-        <div className="profile-panel">
+        <div className={`profile-panel${tabLayerOpen ? " profile-panel-expanded" : ""}`}>
           <div className="section-header">
             <div>
               <h2>My tabs</h2>
@@ -556,6 +561,20 @@ export function ProfilePage() {
                 placeholder="Optional notes"
               />
             </label>
+            <label className="field">
+              <span>Cover image</span>
+              <input
+                type="file"
+                accept="image/png,image/jpeg"
+                onChange={(event) => setPlaylistCoverFile(event.target.files?.[0] || null)}
+              />
+            </label>
+            {playlistCoverFile ? (
+              <div className="form-note image-note">
+                <ImagePlus size={16} />
+                {playlistCoverFile.name}
+              </div>
+            ) : null}
             <button className="btn primary full" disabled={creatingPlaylist} type="submit">
               <Plus size={18} />
               {creatingPlaylist ? "Creating..." : "Create playlist"}

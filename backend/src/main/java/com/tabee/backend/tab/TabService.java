@@ -34,6 +34,11 @@ public class TabService {
     }
 
     @Transactional(readOnly = true)
+    public List<Tab> findDiscoveryTabs() {
+        return tabRepository.findTop10ByOrderByCreatedAtDesc();
+    }
+
+    @Transactional(readOnly = true)
     public List<FavoriteTab> findFavorites(User user) {
         return favoriteTabRepository.findByUser_IdOrderByFavoritedAtDesc(user.getId());
     }

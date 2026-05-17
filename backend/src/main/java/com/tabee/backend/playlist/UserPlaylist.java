@@ -36,6 +36,9 @@ public class UserPlaylist {
 
     private String description;
 
+    @Column(name = "cover_image_filename")
+    private String coverImageFilename;
+
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt = OffsetDateTime.now();
 
@@ -68,6 +71,14 @@ public class UserPlaylist {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getCoverImageFilename() {
+        return coverImageFilename;
+    }
+
+    public void setCoverImageFilename(String coverImageFilename) {
+        this.coverImageFilename = coverImageFilename;
     }
 
     public OffsetDateTime getCreatedAt() {

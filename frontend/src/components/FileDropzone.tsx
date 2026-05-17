@@ -9,7 +9,7 @@ interface FileDropzoneProps {
 
 export function FileDropzone({ file, onFileChange }: FileDropzoneProps) {
   const [dragging, setDragging] = useState(false);
-  const meta = file ? `${formatBytes(file.size)} / ${file.type || "audio"}` : "WAV, MP3, OGG, or M4A";
+  const meta = file ? `${formatBytes(file.size)} / ${file.type || "audio"}` : "WAV, MP3, or MP4";
 
   function handleFile(candidate?: File) {
     if (!candidate) return;
@@ -35,7 +35,7 @@ export function FileDropzone({ file, onFileChange }: FileDropzoneProps) {
     >
       <input
         type="file"
-        accept="audio/*,.wav,.mp3,.ogg,.m4a"
+        accept=".wav,.mp3,.mp4,audio/wav,audio/x-wav,audio/mpeg,audio/mp3,video/mp4,audio/mp4"
         onChange={(event) => handleFile(event.target.files?.[0])}
       />
       <span className="drop-icon">

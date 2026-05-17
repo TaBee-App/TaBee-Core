@@ -1,8 +1,10 @@
-import { ListMusic, Music, UserRound } from "lucide-react";
+import { ListMusic, Music } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { followUser, getPublicUser, unfollowUser } from "../api/authApi";
 import { listPlaylistArchiveByUser, listPublicTabsByUser } from "../api/tabeeApi";
+import { Avatar } from "../components/Avatar";
+import { PlaylistCover } from "../components/PlaylistCover";
 import { errorMessage } from "../lib/errors";
 import type { PublicUserProfile } from "../types/auth";
 import type { GeneratedTab, PlaylistResponse } from "../types/tab";
@@ -60,7 +62,7 @@ export function PublicUserPage() {
       <main className="page-grid">
         <div className="empty-panel">
           <h2>Loading profile</h2>
-          <p>Fetching creator activity.</p>
+          <p>Preparing this user profile.</p>
         </div>
       </main>
     );
@@ -79,14 +81,16 @@ export function PublicUserPage() {
 
   return (
     <main className="profile-page">
-      <section className="profile-hero">
-        <div className="profile-avatar">
-          <UserRound size={28} />
+      <section className="profile-hero public-profile-hero">
+        <div className="public-profile-media">
+          <Avatar src={profile.profileImageUrl} label={profile.username} size="lg" />
+          <button className={`btn ${profile.followedByCurrentUser ? "ghost" : "primary"}`} onClick={toggleFollow}>
+            {profile.followedByCurrentUser ? "Following" : "Follow"}
+          </button>
         </div>
-        <div>
-          <p className="eyebrow">Creator</p>
+        <div className="public-profile-summary">
           <h2>{profile.fullName || profile.username}</h2>
-          <p>@{profile.username}</p>
+          <p className="public-profile-username">@{profile.username}</p>
           <div className="social-counts">
             <Link to={`/users/${profile.id}/followers`}>
               <strong>{profile.followerCount}</strong>
@@ -98,15 +102,22 @@ export function PublicUserPage() {
             </Link>
           </div>
         </div>
-        <button className={`btn ${profile.followedByCurrentUser ? "ghost" : "primary"}`} onClick={toggleFollow}>
-          {profile.followedByCurrentUser ? "Following" : "Follow"}
-        </button>
+        <div className="public-profile-facts">
+          <span>
+            <strong>{tabs.length}</strong>
+            <small>Tabs</small>
+          </span>
+          <span>
+            <strong>{playlists.length}</strong>
+            <small>Playlists</small>
+          </span>
+        </div>
       </section>
 
       {error ? <div className="form-error">{error}</div> : null}
 
-      <section className="profile-grid">
-        <div className="profile-panel">
+      <section className="profile-grid equal-profile-grid">
+        <div className="profile-panel public-profile-panel">
           <div className="section-header">
             <div>
               <h2>Tabs</h2>
@@ -114,17 +125,23 @@ export function PublicUserPage() {
             </div>
             <Music size={20} />
           </div>
-          <div className="profile-list">
+          <div className="profile-list scroll-list">
             {tabs.map((tab) => (
               <Link className="profile-tab-row" to={`/tabs/${tab.id}`} key={tab.id}>
                 <span>{tab.title}</span>
                 <small>{tab.fileName} / {tab.instrument}</small>
               </Link>
             ))}
+            {!tabs.length ? (
+              <div className="empty-list-message">
+                <h3>{profile.username} has not created any tabs yet</h3>
+                <p>Generated tabs will appear here when they are shared.</p>
+              </div>
+            ) : null}
           </div>
         </div>
 
-        <div className="profile-panel">
+        <div className="profile-panel public-profile-panel">
           <div className="section-header">
             <div>
               <h2>Playlists</h2>
@@ -132,9 +149,10 @@ export function PublicUserPage() {
             </div>
             <ListMusic size={20} />
           </div>
-          <div className="profile-list">
+          <div className="profile-list scroll-list">
             {playlists.map((playlist) => (
               <Link className="profile-playlist-row" to={`/playlists/${playlist.id}`} key={playlist.id}>
+                <PlaylistCover src={playlist.coverImageUrl} title={playlist.name} size="sm" />
                 <div>
                   <span>{playlist.name}</span>
                   <small>{playlist.description || `${playlist.tabs.length} tabs`}</small>
@@ -142,6 +160,12 @@ export function PublicUserPage() {
                 <strong>{playlist.tabs.length}</strong>
               </Link>
             ))}
+            {!playlists.length ? (
+              <div className="empty-list-message">
+                <h3>{profile.username} has not created a playlist yet</h3>
+                <p>Playlists they publish will show up in this panel.</p>
+              </div>
+            ) : null}
           </div>
         </div>
       </section>

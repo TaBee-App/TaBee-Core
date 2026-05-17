@@ -4,6 +4,7 @@ export interface GeneratedTab {
   id: string;
   ownerUserId?: number;
   ownerUsername?: string;
+  ownerProfileImageUrl?: string | null;
   title: string;
   fileName: string;
   instrument: Instrument;
@@ -63,6 +64,7 @@ export interface TabResponse {
   id: number;
   ownerUserId: number;
   ownerUsername: string;
+  ownerProfileImageUrl?: string | null;
   tabDataId: number;
   title: string;
   artist?: string | null;
@@ -101,8 +103,10 @@ export interface PlaylistResponse {
   id: number;
   ownerUserId: number;
   ownerUsername: string;
+  ownerProfileImageUrl?: string | null;
   name: string;
   description?: string | null;
+  coverImageUrl?: string | null;
   createdAt: string;
   createdByCurrentUser: boolean;
   savedByCurrentUser: boolean;

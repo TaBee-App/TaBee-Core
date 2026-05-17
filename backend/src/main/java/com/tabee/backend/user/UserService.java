@@ -1,14 +1,20 @@
 package com.tabee.backend.user;
 
 import java.util.List;
+import java.time.OffsetDateTime;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.tabee.backend.common.ImageStorageService;
 import com.tabee.backend.user.UserDtos.UserRequest;
 import com.tabee.backend.user.UserDtos.UserDeleteRequest;
+import com.tabee.backend.user.UserDtos.EmailUpdateCodeRequest;
+import com.tabee.backend.user.UserDtos.EmailUpdateCodeResponse;
+import com.tabee.backend.user.UserDtos.EmailUpdateConfirmRequest;
 import com.tabee.backend.user.UserDtos.UserUpdateRequest;
 
 @Service
@@ -16,13 +22,19 @@ public class UserService {
     private final UserRepository userRepository;
     private final UserFollowRepository userFollowRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailUpdateVerificationService emailUpdateVerificationService;
+    private final ImageStorageService imageStorageService;
 
     public UserService(UserRepository userRepository,
                        UserFollowRepository userFollowRepository,
-                       PasswordEncoder passwordEncoder) {
+                       PasswordEncoder passwordEncoder,
+                       EmailUpdateVerificationService emailUpdateVerificationService,
+                       ImageStorageService imageStorageService) {
         this.userRepository = userRepository;
         this.userFollowRepository = userFollowRepository;
         this.passwordEncoder = passwordEncoder;
+        this.emailUpdateVerificationService = emailUpdateVerificationService;
+        this.imageStorageService = imageStorageService;
     }
 
     public List<User> findAll() {
@@ -31,14 +43,17 @@ public class UserService {
 
     public List<User> search(String query) {
         String normalized = query == null ? "" : query.trim();
+        if (normalized.startsWith("@")) {
+            normalized = normalized.substring(1).trim();
+        }
         if (normalized.isBlank()) {
             return userRepository.findTop24ByOrderByUsernameAsc();
         }
-        return userRepository.findTop24ByUsernameContainingIgnoreCaseOrFullNameContainingIgnoreCaseOrEmailContainingIgnoreCaseOrderByUsernameAsc(
-                normalized,
-                normalized,
-                normalized
-        );
+        return userRepository.findTop24ByUsernameContainingIgnoreCaseOrderByUsernameAsc(normalized);
+    }
+
+    public List<User> findDiscoveryUsers() {
+        return userRepository.findTop10ByOrderByCreatedAtDesc();
     }
 
     public User findById(Long id) {
@@ -47,16 +62,21 @@ public class UserService {
     }
 
     public User create(UserRequest request) {
-        ensureUsernameAvailable(request.username(), null);
-        ensureEmailAvailable(request.email(), null);
-        PasswordPolicy.validate(request.password(), request.username(), request.email(), request.fullName());
+        validateNewUser(request);
 
         User user = new User();
         user.setUsername(request.username());
         user.setEmail(request.email());
         user.setFullName(request.fullName());
+        user.setEmailConfirmed(true);
         user.setPasswordHash(passwordEncoder.encode(request.password()));
         return userRepository.save(user);
+    }
+
+    public void validateNewUser(UserRequest request) {
+        ensureUsernameAvailable(request.username(), null);
+        ensureEmailAvailable(request.email(), null);
+        PasswordPolicy.validate(request.password(), request.username(), request.email(), request.fullName());
     }
 
     public User update(Long id, UserUpdateRequest request) {
@@ -67,12 +87,10 @@ public class UserService {
         }
 
         if (request.username() != null && !request.username().isBlank()) {
-            ensureUsernameAvailable(request.username(), id);
-            user.setUsername(request.username());
+            updateUsername(user, request.username());
         }
         if (request.email() != null && !request.email().isBlank()) {
-            ensureEmailAvailable(request.email(), id);
-            user.setEmail(request.email());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Use the email verification flow to change email");
         }
         if (request.fullName() != null) {
             user.setFullName(request.fullName());
@@ -85,8 +103,26 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    public EmailUpdateCodeResponse requestEmailUpdateCode(Long id, EmailUpdateCodeRequest request) {
+        User user = findById(id);
+        ensureCurrentPassword(user, request.currentPassword());
+        ensureEmailAvailable(request.email(), id);
+        return emailUpdateVerificationService.sendCode(id, request.email());
+    }
+
+    public User confirmEmailUpdate(Long id, EmailUpdateConfirmRequest request) {
+        User user = findById(id);
+        ensureCurrentPassword(user, request.currentPassword());
+        ensureEmailAvailable(request.email(), id);
+        emailUpdateVerificationService.verify(id, request.email(), request.verificationCode());
+        user.setEmail(request.email().trim().toLowerCase(java.util.Locale.ROOT));
+        user.setEmailConfirmed(true);
+        return userRepository.save(user);
+    }
+
     public void delete(Long id) {
         User user = findById(id);
+        imageStorageService.deleteQuietly(user.getProfileImageFilename());
         userRepository.delete(user);
     }
 
@@ -100,7 +136,29 @@ public class UserService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Confirmation phrase does not match");
         }
 
+        imageStorageService.deleteQuietly(user.getProfileImageFilename());
         userRepository.delete(user);
+    }
+
+    public User updateProfileImage(User user, MultipartFile file) {
+        String previous = user.getProfileImageFilename();
+        String filename = imageStorageService.store(file, "user-" + user.getId());
+        user.setProfileImageFilename(filename);
+        User saved = userRepository.save(user);
+        imageStorageService.deleteQuietly(previous);
+        return saved;
+    }
+
+    public User removeProfileImage(User user) {
+        String previous = user.getProfileImageFilename();
+        user.setProfileImageFilename(null);
+        User saved = userRepository.save(user);
+        imageStorageService.deleteQuietly(previous);
+        return saved;
+    }
+
+    public String profileImageUrl(User user) {
+        return imageStorageService.url(user.getProfileImageFilename());
     }
 
     public List<UserFollow> findFollowing(User user) {
@@ -161,11 +219,31 @@ public class UserService {
         });
     }
 
+    private void updateUsername(User user, String username) {
+        String nextUsername = username.trim();
+        if (nextUsername.equals(user.getUsername())) {
+            return;
+        }
+        OffsetDateTime lastUsernameChange = user.getUsernameUpdatedAt();
+        if (lastUsernameChange != null && lastUsernameChange.plusMonths(1).isAfter(OffsetDateTime.now())) {
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Username can be changed once per month");
+        }
+        ensureUsernameAvailable(nextUsername, user.getId());
+        user.setUsername(nextUsername);
+        user.setUsernameUpdatedAt(OffsetDateTime.now());
+    }
+
     private void ensureEmailAvailable(String email, Long currentUserId) {
         userRepository.findByEmail(email).ifPresent(existing -> {
             if (!existing.getId().equals(currentUserId)) {
                 throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already exists");
             }
         });
+    }
+
+    private void ensureCurrentPassword(User user, String currentPassword) {
+        if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Current password is incorrect");
+        }
     }
 }
