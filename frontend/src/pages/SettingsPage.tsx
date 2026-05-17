@@ -1,23 +1,91 @@
-import { Moon, Sun, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { Moon, Save, Sun, Trash2 } from "lucide-react";
+import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { deleteMe } from "../api/authApi";
+import { deleteMe, updateMe } from "../api/authApi";
+import { getCurrentUser } from "../api/authSession";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { errorMessage } from "../lib/errors";
+import { passwordPolicyError, passwordRules } from "../lib/passwordPolicy";
 import { applyTheme, getStoredTheme, type ThemeMode } from "../lib/theme";
 
 export function SettingsPage() {
   const navigate = useNavigate();
+  const currentUser = getCurrentUser();
   const [theme, setTheme] = useState<ThemeMode>(() => getStoredTheme());
+  const [profileForm, setProfileForm] = useState({
+    username: currentUser?.username || "",
+    email: currentUser?.email || "",
+    fullName: currentUser?.fullName || "",
+    currentPassword: "",
+    password: ""
+  });
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileError, setProfileError] = useState("");
+  const [profileSaved, setProfileSaved] = useState(false);
   const [deletePassword, setDeletePassword] = useState("");
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [deleteError, setDeleteError] = useState("");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const newPasswordRules = passwordRules(profileForm.password, {
+    username: profileForm.username,
+    email: profileForm.email,
+    fullName: profileForm.fullName
+  });
 
   function changeTheme(nextTheme: ThemeMode) {
     setTheme(nextTheme);
     applyTheme(nextTheme);
+  }
+
+  async function submitProfile(event: FormEvent) {
+    event.preventDefault();
+    const username = profileForm.username.trim();
+    const email = profileForm.email.trim();
+    const fullName = profileForm.fullName.trim();
+    const currentPassword = profileForm.currentPassword.trim();
+    const password = profileForm.password.trim();
+
+    if (!username || !email) {
+      setProfileError("Username and email are required.");
+      return;
+    }
+    if (!currentPassword) {
+      setProfileError("Current password is required to update your profile.");
+      return;
+    }
+    if (password) {
+      const policyError = passwordPolicyError(password, { username, email, fullName });
+      if (policyError) {
+        setProfileError(policyError);
+        return;
+      }
+    }
+
+    setSavingProfile(true);
+    setProfileError("");
+    setProfileSaved(false);
+    try {
+      const updatedUser = await updateMe({
+        currentPassword,
+        username,
+        email,
+        fullName,
+        ...(password ? { password } : {})
+      });
+      setProfileForm({
+        username: updatedUser.username,
+        email: updatedUser.email,
+        fullName: updatedUser.fullName || "",
+        currentPassword: "",
+        password: ""
+      });
+      setProfileSaved(true);
+    } catch (caught) {
+      setProfileError(errorMessage(caught, "Could not update profile."));
+    } finally {
+      setSavingProfile(false);
+    }
   }
 
   function requestDeleteAccount() {
@@ -54,10 +122,9 @@ export function SettingsPage() {
     <main className="settings-page">
       <section className="settings-panel">
         <p className="eyebrow">Settings</p>
-        <h2>Viewer preferences</h2>
+        <h2>Account and preferences</h2>
         <p>
-          This page is intentionally small for the first frontend milestone. The settings that matter next are theme,
-          default instrument, default tuning, cursor style, and notation scale.
+          Manage your profile, reading preference, and account safety from one place.
         </p>
 
         <div className="setting-row">
@@ -77,21 +144,82 @@ export function SettingsPage() {
           </div>
         </div>
 
-        <div className="setting-row">
-          <div>
-            <strong>Default backend</strong>
-            <span>Development proxy points `/api` to `127.0.0.1:8080`.</span>
+        <form className="settings-form-panel" onSubmit={submitProfile}>
+          <div className="section-header">
+            <div>
+              <h2>Edit profile</h2>
+              <p>Current password is required before saving account changes.</p>
+            </div>
           </div>
-          <code>vite.config.ts</code>
-        </div>
 
-        <div className="setting-row">
-          <div>
-            <strong>Renderer</strong>
-            <span>AlphaTab renders generated AlphaTex as tablature.</span>
+          {profileError ? <div className="form-error">{profileError}</div> : null}
+          {profileSaved ? <div className="form-success">Profile updated.</div> : null}
+
+          <div className="settings-form-grid">
+            <label className="field">
+              <span>Username</span>
+              <input
+                value={profileForm.username}
+                onChange={(event) => setProfileForm((current) => ({ ...current, username: event.target.value }))}
+              />
+            </label>
+            <label className="field">
+              <span>Email</span>
+              <input
+                type="email"
+                value={profileForm.email}
+                onChange={(event) => setProfileForm((current) => ({ ...current, email: event.target.value }))}
+              />
+            </label>
           </div>
-          <code>@coderline/alphatab</code>
-        </div>
+
+          <label className="field">
+            <span>Full name</span>
+            <input
+              value={profileForm.fullName}
+              onChange={(event) => setProfileForm((current) => ({ ...current, fullName: event.target.value }))}
+            />
+          </label>
+
+          <div className="settings-form-grid">
+            <label className="field">
+              <span>Current password</span>
+              <input
+                type="password"
+                value={profileForm.currentPassword}
+                placeholder="Required to save changes"
+                onChange={(event) =>
+                  setProfileForm((current) => ({ ...current, currentPassword: event.target.value }))
+                }
+              />
+            </label>
+            <label className="field">
+              <span>New password</span>
+              <input
+                type="password"
+                value={profileForm.password}
+                placeholder="Leave blank to keep current password"
+                minLength={8}
+                onChange={(event) => setProfileForm((current) => ({ ...current, password: event.target.value }))}
+              />
+            </label>
+          </div>
+
+          {profileForm.password ? (
+            <ul className="password-rules">
+              {newPasswordRules.map((rule) => (
+                <li className={rule.passed ? "passed" : ""} key={rule.id}>
+                  {rule.label}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+
+          <button className="btn primary" disabled={savingProfile} type="submit">
+            <Save size={18} />
+            {savingProfile ? "Saving..." : "Save profile"}
+          </button>
+        </form>
 
         <div className="setting-row danger-zone">
           <div>

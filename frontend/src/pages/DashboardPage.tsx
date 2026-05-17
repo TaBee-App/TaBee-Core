@@ -1,21 +1,17 @@
 import { FilePlus2, Music, Search, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { deleteGeneratedTab, listPublicTabs, listTabs } from "../api/tabeeApi";
-import { ConfirmDialog } from "../components/ConfirmDialog";
+import { listTabs } from "../api/tabeeApi";
 import { errorMessage } from "../lib/errors";
-import { loadTabs, removeTab, saveTabs, upsertTab } from "../lib/tabStore";
+import { clearRecentTabs, hideRecentTab, loadHiddenRecentTabIds, loadTabs, saveTabs, upsertTab } from "../lib/tabStore";
 import { demoTab } from "../lib/demoTab";
 import type { GeneratedTab } from "../types/tab";
 
 export function DashboardPage() {
   const navigate = useNavigate();
   const [tabs, setTabs] = useState(loadTabs);
-  const [publicTabs, setPublicTabs] = useState<GeneratedTab[]>([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
-  const [deleteCandidate, setDeleteCandidate] = useState<GeneratedTab | null>(null);
-  const [deletingTabId, setDeletingTabId] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -25,12 +21,11 @@ export function DashboardPage() {
       setLoading(true);
       setError("");
       try {
-        const [backendTabs, nextPublicTabs] = await Promise.all([listTabs(), listPublicTabs()]);
+        const backendTabs = await listTabs();
         if (!active) return;
         const merged = mergeTabs(backendTabs, loadTabs());
         saveTabs(merged);
         setTabs(merged);
-        setPublicTabs(nextPublicTabs);
       } catch (caught) {
         if (!active) return;
         setError(errorMessage(caught, "Could not load backend tabs."));
@@ -53,41 +48,17 @@ export function DashboardPage() {
     return tabs.filter((tab) => `${tab.title} ${tab.fileName} ${tab.instrument}`.toLowerCase().includes(normalized));
   }, [query, tabs]);
 
-  const discoverTabs = useMemo(() => {
-    const ownedIds = new Set(tabs.map((tab) => tab.id));
-    const discoverable = publicTabs.filter((tab) => !ownedIds.has(tab.id));
-    const normalized = query.trim().toLowerCase();
-    if (!normalized) return discoverable;
-    return discoverable.filter((tab) => `${tab.title} ${tab.fileName} ${tab.instrument}`.toLowerCase().includes(normalized));
-  }, [publicTabs, query, tabs]);
-
   function loadDemo() {
     setTabs(upsertTab(demoTab));
     navigate("/tabs/demo");
   }
 
-  async function deleteTab(tab: GeneratedTab) {
-    setDeletingTabId(tab.id);
-    const previousTabs = tabs;
-    const nextTabs = removeTab(tab.id);
-    setTabs(nextTabs);
+  function removeFromRecents(tabId: string) {
+    setTabs(hideRecentTab(tabId));
+  }
 
-    if (tab.id === demoTab.id) {
-      setDeleteCandidate(null);
-      setDeletingTabId("");
-      return;
-    }
-
-    try {
-      await deleteGeneratedTab(tab.id);
-      setDeleteCandidate(null);
-    } catch (caught) {
-      saveTabs(previousTabs);
-      setTabs(previousTabs);
-      setError(errorMessage(caught, "Could not delete tab."));
-    } finally {
-      setDeletingTabId("");
-    }
+  function clearRecents() {
+    setTabs(clearRecentTabs());
   }
 
   return (
@@ -119,6 +90,10 @@ export function DashboardPage() {
             <h2>Recent tabs</h2>
             <p>{loading ? "Loading backend tabs..." : `${tabs.length} available in your library`}</p>
           </div>
+          <button className="btn ghost" onClick={clearRecents} disabled={!tabs.length} title="Hide all recent tabs">
+            <Trash2 size={17} />
+            Clear recents
+          </button>
         </div>
 
         <label className="search-box">
@@ -139,9 +114,8 @@ export function DashboardPage() {
               </Link>
               <button
                 className="icon-btn subtle"
-                title="Delete"
-                disabled={deletingTabId === tab.id}
-                onClick={() => setDeleteCandidate(tab)}
+                title="Remove from recents"
+                onClick={() => removeFromRecents(tab.id)}
               >
                 <Trash2 size={17} />
               </button>
@@ -157,50 +131,15 @@ export function DashboardPage() {
         ) : null}
       </section>
 
-      <section className="library-panel">
-        <div className="section-header">
-          <div>
-            <h2>Discover tabs</h2>
-            <p>{loading ? "Loading public tabs..." : `${discoverTabs.length} tabs from other users`}</p>
-          </div>
-        </div>
-
-        <div className="tab-list">
-          {discoverTabs.map((tab) => (
-            <article className="tab-card" key={tab.id}>
-              <Link to={`/tabs/${tab.id}`}>
-                <span className="tab-card-title">{tab.title}</span>
-                <span className="tab-card-meta">
-                  {tab.fileName} / {tab.instrument} / {tab.createdAt}
-                </span>
-              </Link>
-            </article>
-          ))}
-        </div>
-
-        {!loading && !discoverTabs.length ? (
-          <div className="empty-panel compact">
-            <h3>No public tabs found</h3>
-            <p>As more users generate tabs, they will appear here.</p>
-          </div>
-        ) : null}
-      </section>
-      {deleteCandidate ? (
-        <ConfirmDialog
-          title="Delete tab?"
-          message={`Delete "${deleteCandidate.title}"? This removes it from your recent library${deleteCandidate.id === demoTab.id ? "." : " and your account."}`}
-          confirmLabel="Delete tab"
-          loading={deletingTabId === deleteCandidate.id}
-          tone="danger"
-          onCancel={() => setDeleteCandidate(null)}
-          onConfirm={() => deleteTab(deleteCandidate)}
-        />
-      ) : null}
     </main>
   );
 }
 
 function mergeTabs(backendTabs: GeneratedTab[], cachedTabs: GeneratedTab[]) {
   const backendIds = new Set(backendTabs.map((tab) => tab.id));
-  return [...backendTabs, ...cachedTabs.filter((tab) => !backendIds.has(tab.id))];
+  const hiddenIds = new Set(loadHiddenRecentTabIds());
+  return [
+    ...backendTabs.filter((tab) => !hiddenIds.has(tab.id)),
+    ...cachedTabs.filter((tab) => !backendIds.has(tab.id) && !hiddenIds.has(tab.id)),
+  ];
 }

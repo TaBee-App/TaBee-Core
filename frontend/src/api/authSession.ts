@@ -23,6 +23,7 @@ export function saveAuthSession(response: AuthResponse) {
 
 export function saveCurrentUser(user: UserProfile) {
   localStorage.setItem(USER_KEY, JSON.stringify(user));
+  window.dispatchEvent(new CustomEvent("tabee:user-updated", { detail: user }));
 }
 
 export function clearAuthSession() {

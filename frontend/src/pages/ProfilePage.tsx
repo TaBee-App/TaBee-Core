@@ -181,32 +181,45 @@ export function ProfilePage() {
   return (
     <main className="profile-page">
       <section className="profile-hero">
-        <div className="profile-avatar">
-          <UserRound size={28} />
-        </div>
-        <div>
-          <p className="eyebrow">Profile</p>
-          <h2>{currentUser?.fullName || currentUser?.username || "TaBee user"}</h2>
-          <p>@{currentUser?.username || "profile"} / {currentUser?.email || "Signed in to TaBee"}</p>
-          {profileSummary ? (
-            <div className="social-counts">
-              <Link to={`/users/${profileSummary.id}/followers`}>
-                <strong>{profileSummary.followerCount}</strong>
-                <span>Followers</span>
-              </Link>
-              <Link to={`/users/${profileSummary.id}/following`}>
-                <strong>{profileSummary.followingCount}</strong>
-                <span>Following</span>
-              </Link>
-            </div>
-          ) : null}
+        <div className="profile-identity">
+          <div className="profile-avatar">
+            <UserRound size={28} />
+          </div>
+          <div className="profile-title-block">
+            <p className="eyebrow">Profile</p>
+            <h2>{currentUser?.fullName || currentUser?.username || "TaBee user"}</h2>
+            <p>@{currentUser?.username || "profile"} / {currentUser?.email || "Signed in to TaBee"}</p>
+            {profileSummary ? (
+              <div className="social-counts">
+                <Link to={`/users/${profileSummary.id}/followers`}>
+                  <strong>{profileSummary.followerCount}</strong>
+                  <span>Followers</span>
+                </Link>
+                <Link to={`/users/${profileSummary.id}/following`}>
+                  <strong>{profileSummary.followingCount}</strong>
+                  <span>Following</span>
+                </Link>
+              </div>
+            ) : null}
+          </div>
         </div>
         <div className="profile-stats">
-          <span>{tabs.length} tabs</span>
-          <span>{favoriteTabs.length} favorites</span>
-          <span>{playlists.length} created</span>
-          <span>{savedPlaylists.length} saved</span>
-          <span>{unplaylistedTabs.length} unplaylisted</span>
+          <span>
+            <strong>{tabs.length}</strong>
+            <small>Tabs</small>
+          </span>
+          <span>
+            <strong>{favoriteTabs.length}</strong>
+            <small>Favorites</small>
+          </span>
+          <span>
+            <strong>{playlists.length}</strong>
+            <small>Created playlists</small>
+          </span>
+          <span>
+            <strong>{savedPlaylists.length}</strong>
+            <small>Saved playlists</small>
+          </span>
         </div>
       </section>
 

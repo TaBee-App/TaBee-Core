@@ -3,8 +3,8 @@ import { AppShell } from "../components/AppShell";
 import { RequireAuth } from "../components/RequireAuth";
 import { AuthPage } from "../pages/AuthPage";
 import { DashboardPage } from "../pages/DashboardPage";
+import { DiscoveryPage } from "../pages/DiscoveryPage";
 import { GeneratePage } from "../pages/GeneratePage";
-import { PlaylistsPage } from "../pages/PlaylistsPage";
 import { PlaylistDetailPage } from "../pages/PlaylistDetailPage";
 import { ProfilePage } from "../pages/ProfilePage";
 import { PublicUserPage } from "../pages/PublicUserPage";
@@ -23,7 +23,7 @@ export function App() {
             <Route index element={<DashboardPage />} />
             <Route path="/generate" element={<GeneratePage />} />
             <Route path="/search" element={<SearchPage />} />
-            <Route path="/discover" element={<PlaylistsPage />} />
+            <Route path="/discover" element={<DiscoveryPage />} />
             <Route path="/playlists" element={<Navigate to="/discover" replace />} />
             <Route path="/playlists/:playlistId" element={<PlaylistDetailPage />} />
             <Route path="/profile" element={<ProfilePage />} />
