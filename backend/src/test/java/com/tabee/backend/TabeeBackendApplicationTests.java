@@ -1,12 +1,14 @@
 package com.tabee.backend;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-@SpringBootTest
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 class TabeeBackendApplicationTests {
 
     @Test
-    void contextLoads() {
+    void applicationClassIsSpringBootApplication() {
+        assertTrue(TabeeBackendApplication.class.isAnnotationPresent(SpringBootApplication.class));
     }
 }
