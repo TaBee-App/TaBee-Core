@@ -18,16 +18,20 @@ class PlayabilityOptimizer(TabOptimizer):
     def __init__(
         self,
         weight_fret: float = 1.0,
-        weight_string: float = 1.5,
-        weight_open_string: float = 0.7,
+        weight_string: float = 2.0,
+        weight_open_string: float = 0.45,
         weight_high_fret: float = 0.08,
         weight_position_shift: float = 0.35,
+        weight_low_string_preference: float = 0.18,
+        low_position_fret_limit: int = 5,
     ):
         self._weight_fret = float(weight_fret)
         self._weight_string = float(weight_string)
         self._weight_open_string = float(weight_open_string)
         self._weight_high_fret = float(weight_high_fret)
         self._weight_position_shift = float(weight_position_shift)
+        self._weight_low_string_preference = float(weight_low_string_preference)
+        self._low_position_fret_limit = int(low_position_fret_limit)
 
     def local_cost(self, position: FretPosition) -> float:
         if position.is_rest:
@@ -36,6 +40,8 @@ class PlayabilityOptimizer(TabOptimizer):
         cost = float(position.fret) * self._weight_high_fret
         if position.fret == 0:
             cost += self._weight_open_string
+        if position.fret <= self._low_position_fret_limit and position.string_number is not None:
+            cost -= int(position.string_number) * self._weight_low_string_preference
         return cost
 
     def calculate_cost(

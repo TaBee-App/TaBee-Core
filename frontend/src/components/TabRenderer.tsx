@@ -1,6 +1,7 @@
 import * as alphaTab from "@coderline/alphatab";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { errorMessage } from "../lib/errors";
+import { exportScoreElementToPdf } from "../lib/pdfExport";
 import type { GeneratedTab } from "../types/tab";
 
 type PlaybackBeat = {
@@ -28,6 +29,8 @@ interface TabRendererProps {
   looping: boolean;
   autoScroll: boolean;
   speed: number;
+  onApiChange?: (api: alphaTab.AlphaTabApi | null) => void;
+  onPdfExporterChange?: (exporter: (() => Promise<Blob>) | null) => void;
   onReadyChange: (ready: boolean) => void;
   onPlayingChange: (playing: boolean) => void;
 }
@@ -38,6 +41,8 @@ export function TabRenderer({
   looping,
   autoScroll,
   speed,
+  onApiChange,
+  onPdfExporterChange,
   onReadyChange,
   onPlayingChange
 }: TabRendererProps) {
@@ -62,11 +67,13 @@ export function TabRenderer({
   const destroy = useCallback(() => {
     apiRef.current?.destroy();
     apiRef.current = null;
+    onApiChange?.(null);
+    onPdfExporterChange?.(null);
     currentBeatRef.current = null;
     hasHighlightedRangeRef.current = false;
     pendingLoopRangeRef.current = null;
     onReadyChange(false);
-  }, [onReadyChange]);
+  }, [onApiChange, onPdfExporterChange, onReadyChange]);
 
   const getFirstBeat = useCallback((api: alphaTab.AlphaTabApi): PlaybackBeat | null => {
     const score = api.score as unknown as {
@@ -172,7 +179,8 @@ export function TabRenderer({
     try {
       const api = new alphaTab.AlphaTabApi(hostRef.current, {
         core: {
-          engine: "html5"
+          engine: "html5",
+          enableLazyLoading: false
         },
         notation: {
           rhythmMode: alphaTab.TabRhythmMode.ShowWithBars
@@ -201,6 +209,14 @@ export function TabRenderer({
       });
 
       apiRef.current = api;
+      onApiChange?.(api);
+      onPdfExporterChange?.(() => {
+        const host = hostRef.current;
+        if (!host) {
+          return Promise.reject(new Error("The score is not ready to export yet."));
+        }
+        return exportScoreElementToPdf(host);
+      });
       api.scoreLoaded.on(() => {
         currentBeatRef.current = getFirstBeat(api);
         onReadyChange(true);

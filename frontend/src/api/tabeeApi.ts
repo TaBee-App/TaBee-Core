@@ -209,12 +209,14 @@ function toGeneratedTab(tab: TabResponse, uploadedFileName = "uploaded-audio", p
 
 function toAlphaTex(tab: TabResponse) {
   const jsonData = tab.jsonData || {};
-  const tuning = (tab.tuning || jsonData.tuning || "BEADG").toUpperCase();
+  const tuning = (tab.tuning || jsonData.tuning || "EADG").toUpperCase();
   const tuningText = tuning === "BEADG" ? "(G2 D2 A1 E1 B0)" : "(G2 D2 A1 E1)";
   const notes = [...(jsonData.noteEvents || [])].sort((left, right) => Number(left.time) - Number(right.time));
-  const playableNotes = notes.map(toAlphaTexNote);
-  const body = chunk(playableNotes.length ? playableNotes : ["r"], 8)
-    .map((line) => `:8 ${line.join(" ")} |`)
+  const playableNotes = notes.length
+    ? toAlphaTexEvents(notes, tab.estimatedTempo ?? jsonData.estimatedTempo ?? null)
+    : [{ token: ":8 r", beats: 0.5 }];
+  const body = chunkAlphaTexEvents(playableNotes, 4)
+    .map((line) => `${line.join(" ")} |`)
     .join("\n");
 
   return String.raw`\title "${escapeAlphaTexText(tab.title)}"
@@ -233,10 +235,87 @@ function toAlphaTexNote(note: GeneratedNoteEvent) {
   return `${note.fret}.${note.stringNumber}`;
 }
 
-function chunk<T>(items: T[], size: number) {
-  const chunks: T[][] = [];
-  for (let index = 0; index < items.length; index += size) {
-    chunks.push(items.slice(index, index + size));
+type AlphaTexEvent = {
+  token: string;
+  beats: number;
+};
+
+function toAlphaTexEvents(notes: GeneratedNoteEvent[], tempo: number | null): AlphaTexEvent[] {
+  return notes.flatMap((note) => {
+    const totalBeats = quantizeDurationBeats(noteDurationBeats(note, tempo));
+    const noteBeats = notePlaybackBeats(totalBeats);
+    const restBeats = roundBeatRemainder(totalBeats - noteBeats);
+    const events: AlphaTexEvent[] = [
+      {
+        token: `${durationPrefix(noteBeats)} ${toAlphaTexNote(note)}`,
+        beats: noteBeats
+      }
+    ];
+
+    if (restBeats >= 0.25) {
+      events.push({
+        token: `${durationPrefix(restBeats)} r`,
+        beats: restBeats
+      });
+    }
+
+    return events;
+  });
+}
+
+function noteDurationBeats(note: GeneratedNoteEvent, tempo: number | null) {
+  if (!note.duration || !tempo || tempo <= 0) {
+    return 0.5;
+  }
+
+  return note.duration * (tempo / 60);
+}
+
+function quantizeDurationBeats(beats: number) {
+  if (beats >= 1.5) return 2;
+  if (beats >= 0.75) return 1;
+  if (beats >= 0.375) return 0.5;
+  return 0.25;
+}
+
+function durationPrefix(beats: number) {
+  if (beats >= 2) return ":2";
+  if (beats >= 1) return ":4";
+  if (beats >= 0.5) return ":8";
+  return ":16";
+}
+
+function notePlaybackBeats(totalBeats: number) {
+  if (totalBeats >= 2) return 1;
+  if (totalBeats >= 1) return 0.5;
+  return totalBeats;
+}
+
+function roundBeatRemainder(beats: number) {
+  if (beats >= 0.75) return 1;
+  if (beats >= 0.375) return 0.5;
+  if (beats >= 0.1875) return 0.25;
+  return 0;
+}
+
+function chunkAlphaTexEvents(items: AlphaTexEvent[], beatsPerBar: number) {
+  const chunks: string[][] = [];
+  let current: string[] = [];
+  let currentBeats = 0;
+
+  for (const item of items) {
+    if (current.length && currentBeats + item.beats > beatsPerBar) {
+      chunks.push(current);
+      current = [];
+      currentBeats = 0;
+    }
+
+    current.push(item.token);
+    currentBeats += item.beats;
+  }
+
+  if (current.length) {
+    chunks.push(current);
   }
   return chunks;
 }

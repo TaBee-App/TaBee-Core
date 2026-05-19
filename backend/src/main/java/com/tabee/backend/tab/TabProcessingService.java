@@ -115,7 +115,9 @@ public class TabProcessingService {
                 "--json-out",
                 jsonOut.toString(),
                 "--ascii-out",
-                jsonOut.resolveSibling("tab.txt").toString()
+                jsonOut.resolveSibling("tab.txt").toString(),
+                "--tuning",
+                "EADG"
         );
         processBuilder.directory(coreRoot.toFile());
         processBuilder.redirectErrorStream(true);

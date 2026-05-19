@@ -2716,7 +2716,10 @@ audio {
 
   html,
   body {
+    width: 100%;
+    height: auto !important;
     min-height: auto;
+    overflow: visible !important;
     background: #fff !important;
     color: #111 !important;
   }
@@ -2732,6 +2735,7 @@ audio {
   }
 
   .app-shell {
+    display: block;
     min-height: auto;
     padding: 0;
   }
@@ -2739,6 +2743,8 @@ audio {
   .viewer-page {
     width: 100%;
     margin: 0;
+    break-after: avoid;
+    page-break-after: avoid;
   }
 
   .score-panel {
@@ -2747,6 +2753,8 @@ audio {
     box-shadow: none;
     background: #fff;
     overflow: visible;
+    break-after: avoid;
+    page-break-after: avoid;
   }
 
   .score-header {
@@ -2775,9 +2783,11 @@ audio {
     min-height: auto;
     overflow: visible;
     background: #fff;
-    transform: scale(0.82);
-    transform-origin: top left;
-    width: 121%;
+    transform: none;
+    zoom: 0.82;
+    width: 100%;
+    break-after: avoid;
+    page-break-after: avoid;
   }
 
   .alpha-tab-host {

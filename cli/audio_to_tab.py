@@ -31,9 +31,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--tuning",
-        default="BEADG",
+        default="EADG",
         choices=["EADG", "BEADG"],
-        help="Bass tuning. BEADG handles low notes below standard E1.",
+        help="Bass tuning. EADG is standard 4-string bass; BEADG handles low notes below standard E1.",
     )
     parser.add_argument("--notes-per-line", type=int, default=16, help="ASCII tab notes per rendered line.")
     parser.add_argument("--print-json", action="store_true", help="Print JSON output to terminal too.")
