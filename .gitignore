@@ -91,3 +91,4 @@ backend/media/
 *.swp
 *.tab.json
 *.tab.txt
+/frontend/node_modules/

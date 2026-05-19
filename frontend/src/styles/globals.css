@@ -14,6 +14,10 @@
   --accent-strong: #e0b84e;
   --on-accent: #17120a;
   --gold: #e4bd4f;
+  --playlist-accent: #6da7ff;
+  --playlist-accent-soft: rgba(109, 167, 255, 0.13);
+  --user-accent: #4fc17b;
+  --user-accent-soft: rgba(79, 193, 123, 0.13);
   --danger: #d95d5d;
   --danger-ink: #f2b7b7;
   --danger-muted: #dd8888;
@@ -42,6 +46,10 @@
   --accent-strong: #8f6519;
   --on-accent: #ffffff;
   --gold: #a17712;
+  --playlist-accent: #3777c8;
+  --playlist-accent-soft: rgba(55, 119, 200, 0.12);
+  --user-accent: #2f8e56;
+  --user-accent-soft: rgba(47, 142, 86, 0.12);
   --danger: #c84f4f;
   --danger-ink: #822d2d;
   --danger-muted: #a04545;
@@ -1012,9 +1020,24 @@ a {
 
 .discovery-mode-tabs button.active,
 .discovery-mode-tabs button:hover {
-  border-color: var(--accent);
+  border-color: var(--mode-accent, var(--accent));
   color: var(--ink);
-  background: var(--hover-accent-bg);
+  background: var(--mode-accent-soft, var(--hover-accent-bg));
+}
+
+.tone-tabs {
+  --mode-accent: var(--accent);
+  --mode-accent-soft: var(--hover-accent-bg);
+}
+
+.tone-playlists {
+  --mode-accent: var(--playlist-accent);
+  --mode-accent-soft: var(--playlist-accent-soft);
+}
+
+.tone-users {
+  --mode-accent: var(--user-accent);
+  --mode-accent-soft: var(--user-accent-soft);
 }
 
 .discovery-rail {
@@ -1046,6 +1069,9 @@ a {
   padding: 12px;
   border: 1px solid color-mix(in srgb, var(--card-accent) 24%, var(--line));
   border-radius: 8px;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 10px;
   background:
     linear-gradient(180deg, var(--card-accent-soft), transparent 42%),
     var(--panel-2);
@@ -1064,18 +1090,19 @@ a {
 }
 
 .playlist-discovery-card {
-  --card-accent: #6da7ff;
-  --card-accent-soft: rgba(109, 167, 255, 0.12);
+  --card-accent: var(--playlist-accent);
+  --card-accent-soft: var(--playlist-accent-soft);
 }
 
 .creator-discovery-card {
-  --card-accent: #e4bd4f;
-  --card-accent-soft: rgba(228, 189, 79, 0.13);
+  --card-accent: var(--user-accent);
+  --card-accent-soft: var(--user-accent-soft);
 }
 
 .discovery-card a {
   display: grid;
   gap: 9px;
+  min-width: 0;
 }
 
 .discovery-card strong {
@@ -1117,15 +1144,21 @@ a {
 }
 
 .creator-art {
-  background: linear-gradient(135deg, var(--gold), #ffd979);
-  color: #1b1710;
+  background: linear-gradient(135deg, var(--user-accent), #8be6aa);
+  color: #0f1d16;
 }
 
 .floating-action {
-  position: absolute;
-  right: 18px;
-  bottom: 76px;
+  justify-self: end;
+  align-self: end;
   box-shadow: 0 10px 28px var(--shadow);
+}
+
+.discovery-card .floating-action.active,
+.discovery-card .floating-action:hover {
+  border-color: var(--card-accent);
+  color: var(--card-accent);
+  background: var(--card-accent-soft);
 }
 
 .playlist-tabs {
@@ -1205,7 +1238,8 @@ a {
 .archive-tabs button.active,
 .archive-tabs button:hover {
   color: var(--ink);
-  border-color: var(--accent);
+  border-color: var(--mode-accent, var(--accent));
+  background: var(--mode-accent-soft, var(--hover-accent-bg));
 }
 
 .profile-grid {
@@ -1453,13 +1487,13 @@ a {
 }
 
 .search-results-playlists {
-  --section-accent: #6da7ff;
-  --section-accent-soft: rgba(109, 167, 255, 0.13);
+  --section-accent: var(--playlist-accent);
+  --section-accent-soft: var(--playlist-accent-soft);
 }
 
 .search-results-users {
-  --section-accent: #e4bd4f;
-  --section-accent-soft: rgba(228, 189, 79, 0.14);
+  --section-accent: var(--user-accent);
+  --section-accent-soft: var(--user-accent-soft);
 }
 
 .search-results-section.open,
@@ -1685,8 +1719,8 @@ a {
 }
 
 .profile-user-row {
-  --row-accent: #e4bd4f;
-  --row-accent-soft: rgba(228, 189, 79, 0.12);
+  --row-accent: var(--user-accent);
+  --row-accent-soft: var(--user-accent-soft);
   position: relative;
   min-height: 62px;
   padding: 10px;

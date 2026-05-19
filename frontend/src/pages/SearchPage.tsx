@@ -155,7 +155,7 @@ export function SearchPage() {
 
         <div className="archive-tabs">
           {(["all", "tabs", "playlists", "users"] as SearchScope[]).map((nextScope) => (
-            <button key={nextScope} className={scope === nextScope ? "active" : ""} onClick={() => changeScope(nextScope)}>
+            <button key={nextScope} className={`tone-${nextScope} ${scope === nextScope ? "active" : ""}`} onClick={() => changeScope(nextScope)}>
               {nextScope === "tabs" ? <Music size={17} /> : nextScope === "playlists" ? <ListMusic size={17} /> : nextScope === "users" ? <UserRound size={17} /> : <Search size={17} />}
               {labelForScope(nextScope)}
             </button>

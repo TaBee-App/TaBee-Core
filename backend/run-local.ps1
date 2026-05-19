@@ -9,13 +9,27 @@ if (Test-Path $jdk17) {
 }
 $env:Path = "$env:JAVA_HOME\bin;$env:Path"
 
-$envFile = Join-Path $PSScriptRoot ".env"
-if (Test-Path $envFile) {
+$envFiles = @(
+    (Join-Path $PSScriptRoot ".env"),
+    (Join-Path (Split-Path $PSScriptRoot -Parent) ".env")
+)
+
+foreach ($envFile in $envFiles) {
+    if (-not (Test-Path $envFile)) {
+        continue
+    }
+
+    Write-Host "Loading environment from $envFile"
     Get-Content $envFile | ForEach-Object {
         $line = $_.Trim()
         if ($line -and -not $line.StartsWith("#") -and $line.Contains("=")) {
             $parts = $line.Split("=", 2)
-            [Environment]::SetEnvironmentVariable($parts[0].Trim(), $parts[1].Trim(), "Process")
+            $name = $parts[0].Trim()
+            $value = $parts[1].Trim()
+
+            if (-not [Environment]::GetEnvironmentVariable($name, "Process")) {
+                [Environment]::SetEnvironmentVariable($name, $value, "Process")
+            }
         }
     }
 }

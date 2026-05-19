@@ -213,7 +213,7 @@ function toAlphaTex(tab: TabResponse) {
   const tuningText = tuning === "BEADG" ? "(G2 D2 A1 E1 B0)" : "(G2 D2 A1 E1)";
   const notes = [...(jsonData.noteEvents || [])].sort((left, right) => Number(left.time) - Number(right.time));
   const playableNotes = notes.map(toAlphaTexNote);
-  const body = chunk(playableNotes.length ? playableNotes : ["r"], 16)
+  const body = chunk(playableNotes.length ? playableNotes : ["r"], 8)
     .map((line) => `:8 ${line.join(" ")} |`)
     .join("\n");
 

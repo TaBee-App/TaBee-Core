@@ -6,7 +6,13 @@ const HIDDEN_RECENTS_KEY = "tabee.hiddenRecentTabs";
 export function loadTabs(): GeneratedTab[] {
   try {
     const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-    return Array.isArray(parsed) ? parsed : [];
+    if (!Array.isArray(parsed)) return [];
+
+    const tabs = parsed.filter(isGeneratedTab).map(normalizeGeneratedTab);
+    if (tabs.some((tab, index) => tab !== parsed[index])) {
+      saveTabs(tabs);
+    }
+    return tabs;
   } catch {
     return [];
   }
@@ -67,4 +73,34 @@ function unhideRecentTab(tabId: string) {
   const hiddenIds = new Set(loadHiddenRecentTabIds());
   if (!hiddenIds.delete(tabId)) return;
   localStorage.setItem(HIDDEN_RECENTS_KEY, JSON.stringify([...hiddenIds]));
+}
+
+function isGeneratedTab(value: unknown): value is GeneratedTab {
+  return Boolean(value && typeof value === "object" && "id" in value && "alphaTex" in value);
+}
+
+function normalizeGeneratedTab(tab: GeneratedTab): GeneratedTab {
+  const alphaTex = normalizeAlphaTexBars(tab.alphaTex);
+  return alphaTex === tab.alphaTex ? tab : { ...tab, alphaTex };
+}
+
+function normalizeAlphaTexBars(alphaTex: string) {
+  return alphaTex
+    .split(/\r?\n/)
+    .flatMap((line) => splitOversizedEighthNoteBar(line))
+    .join("\n");
+}
+
+function splitOversizedEighthNoteBar(line: string) {
+  const match = line.match(/^(:8\s+)(.+?)\s*\|\s*$/);
+  if (!match) return [line];
+
+  const notes = match[2].trim().split(/\s+/);
+  if (notes.length <= 8) return [line];
+
+  const bars: string[] = [];
+  for (let index = 0; index < notes.length; index += 8) {
+    bars.push(`${match[1]}${notes.slice(index, index + 8).join(" ")} |`);
+  }
+  return bars;
 }

@@ -1,8 +1,8 @@
-import { Clock, Compass, ListMusic, Music, Star, UserRound } from "lucide-react";
+import { Clock, Compass, ListMusic, Music, Star, UserCheck, UserPlus, UserRound } from "lucide-react";
 import type React from "react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { listDiscoveryUsers } from "../api/authApi";
+import { followUser, listDiscoveryUsers, unfollowUser } from "../api/authApi";
 import { Avatar } from "../components/Avatar";
 import { PlaylistCover } from "../components/PlaylistCover";
 import {
@@ -110,6 +110,15 @@ export function DiscoveryPage() {
     }
   }
 
+  async function toggleFollow(user: PublicUserProfile) {
+    try {
+      const updated = user.followedByCurrentUser ? await unfollowUser(user.id) : await followUser(user.id);
+      setUsers((current) => current.map((item) => (item.id === updated.id ? updated : item)));
+    } catch (caught) {
+      setError(errorMessage(caught, "Could not update followed user."));
+    }
+  }
+
   return (
     <main className="page-grid">
       <section className="discovery-hero">
@@ -127,7 +136,7 @@ export function DiscoveryPage() {
       <section className="library-panel discovery-panel">
         <div className="discovery-mode-tabs">
           {(["forYou", "tabs", "playlists", "users"] as DiscoveryMode[]).map((nextMode) => (
-            <button className={mode === nextMode ? "active" : ""} key={nextMode} onClick={() => setMode(nextMode)}>
+            <button className={`tone-${nextMode} ${mode === nextMode ? "active" : ""}`} key={nextMode} onClick={() => setMode(nextMode)}>
               {iconForMode(nextMode)}
               {labelForMode(nextMode)}
             </button>
@@ -169,7 +178,7 @@ export function DiscoveryPage() {
             </DiscoveryRail>
             <DiscoveryRail title="Users to follow" subtitle={`${suggestedCreators.length} suggested users`}>
               {suggestedCreators.slice(0, 10).map((creator) => (
-                <CreatorDiscoveryCard creator={creator} key={creator.id} />
+                <CreatorDiscoveryCard creator={creator} key={creator.id} onToggleFollow={toggleFollow} />
               ))}
             </DiscoveryRail>
           </>
@@ -194,7 +203,7 @@ export function DiscoveryPage() {
         {mode === "users" ? (
           <DiscoveryGrid title="Users" subtitle={loading ? "Preparing users..." : `${suggestedCreators.length} suggested users`}>
             {suggestedCreators.map((creator) => (
-              <CreatorDiscoveryCard creator={creator} key={creator.id} />
+              <CreatorDiscoveryCard creator={creator} key={creator.id} onToggleFollow={toggleFollow} />
             ))}
           </DiscoveryGrid>
         ) : null}
@@ -286,7 +295,7 @@ function PlaylistDiscoveryCard({ playlist, onToggleSave }: { playlist: PlaylistR
   );
 }
 
-function CreatorDiscoveryCard({ creator }: { creator: PublicUserProfile }) {
+function CreatorDiscoveryCard({ creator, onToggleFollow }: { creator: PublicUserProfile; onToggleFollow: (creator: PublicUserProfile) => void }) {
   return (
     <article className="discovery-card creator-discovery-card">
       <Link to={`/users/${creator.id}`}>
@@ -296,6 +305,13 @@ function CreatorDiscoveryCard({ creator }: { creator: PublicUserProfile }) {
         <strong>{creator.fullName || creator.username}</strong>
         <span>@{creator.username} / {creator.followerCount} followers</span>
       </Link>
+      <button
+        className={`icon-btn subtle floating-action${creator.followedByCurrentUser ? " active" : ""}`}
+        title={creator.followedByCurrentUser ? "Following" : "Follow user"}
+        onClick={() => onToggleFollow(creator)}
+      >
+        {creator.followedByCurrentUser ? <UserCheck size={17} /> : <UserPlus size={17} />}
+      </button>
     </article>
   );
 }
