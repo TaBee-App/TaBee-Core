@@ -1,5 +1,5 @@
 import { FileDown, Pencil, Plus, Save, Star, Trash2, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   addTabToPlaylist,
@@ -54,6 +54,12 @@ export function TabViewerPage() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const tabApiRef = useRef<PrintableTabApi | null>(null);
   const pdfExporterRef = useRef<(() => Promise<Blob>) | null>(null);
+  const handleTabApiChange = useCallback((api: PrintableTabApi | null) => {
+    tabApiRef.current = api;
+  }, []);
+  const handlePdfExporterChange = useCallback((exporter: (() => Promise<Blob>) | null) => {
+    pdfExporterRef.current = exporter;
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -424,12 +430,8 @@ export function TabViewerPage() {
             looping={looping}
             autoScroll={autoScroll}
             speed={speed}
-            onApiChange={(api) => {
-              tabApiRef.current = api;
-            }}
-            onPdfExporterChange={(exporter) => {
-              pdfExporterRef.current = exporter;
-            }}
+            onApiChange={handleTabApiChange}
+            onPdfExporterChange={handlePdfExporterChange}
             onReadyChange={setReady}
             onPlayingChange={setPlaying}
           />

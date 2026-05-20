@@ -1251,7 +1251,7 @@ a {
 }
 
 .profile-page > .profile-grid:not(.equal-profile-grid) {
-  align-items: stretch;
+  align-items: start;
 }
 
 .profile-page > .profile-grid:not(.equal-profile-grid) > .profile-panel {
@@ -1638,8 +1638,8 @@ a {
 }
 
 .user-result-row {
-  --section-accent: #d08ba7;
-  --section-accent-soft: rgba(208, 139, 167, 0.13);
+  --section-accent: var(--user-accent);
+  --section-accent-soft: var(--user-accent-soft);
 }
 
 .compact-header {
@@ -2635,6 +2635,10 @@ audio {
 }
 
 @media (max-width: 620px) {
+  body {
+    overflow-x: hidden;
+  }
+
   .topbar-inner,
   .page-grid,
   .generator-layout,
@@ -2645,18 +2649,93 @@ audio {
     width: min(100% - 20px, 1180px);
   }
 
+  .page-grid,
+  .generator-layout,
+  .viewer-page,
+  .settings-page,
+  .profile-page {
+    margin-top: 14px;
+    margin-bottom: 14px;
+  }
+
+  .topbar-inner {
+    min-height: 58px;
+    gap: 10px;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: center;
+  }
+
+  .brand-mark {
+    width: 44px;
+    height: 44px;
+  }
+
+  .brand-title {
+    font-size: 1.02rem;
+  }
+
   .brand-subtitle,
   .status-pill {
     display: none;
   }
 
+  .account-menu,
+  .account-pill {
+    justify-self: stretch;
+  }
+
+  .account-trigger,
+  .profile-chip {
+    min-height: 34px;
+    max-width: 132px;
+    padding: 0 8px;
+  }
+
+  .account-trigger span,
+  .profile-chip span {
+    max-width: 78px;
+  }
+
   .nav-tabs {
+    width: 100%;
     overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+
+  .nav-tabs::-webkit-scrollbar {
+    display: none;
   }
 
   .nav-tabs a {
-    flex: 1 0 auto;
+    flex: 1 1 0;
+    min-width: 0;
     justify-content: center;
+    gap: 6px;
+  }
+
+  .topbar-inner .nav-tabs {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    align-items: center;
+  }
+
+  .topbar-inner .account-menu,
+  .topbar-inner .account-pill {
+    display: contents;
+  }
+
+  .topbar-inner .account-trigger,
+  .topbar-inner .profile-chip {
+    width: 100%;
+    max-width: none;
+    min-height: 36px;
+    justify-content: center;
+  }
+
+  .topbar-inner .account-trigger span,
+  .topbar-inner .profile-chip span {
+    max-width: 74px;
   }
 
   .library-hero,
@@ -2664,8 +2743,173 @@ audio {
     padding: 20px;
   }
 
+  .library-hero h2,
+  .discovery-hero h2,
+  .workspace-panel h2,
+  .process-panel h2,
+  .settings-panel h2 {
+    font-size: 1.45rem;
+  }
+
+  .discovery-mode-tabs {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .discovery-mode-tabs button {
+    min-height: 36px;
+    justify-content: center;
+    padding: 0 8px;
+    gap: 5px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+
+  .archive-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .archive-tabs button {
+    min-height: 36px;
+    justify-content: center;
+    padding: 0 9px;
+    font-size: 0.84rem;
+  }
+
+  .discovery-strip {
+    grid-auto-columns: minmax(138px, 156px);
+    gap: 10px;
+  }
+
+  .discovery-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .discovery-card {
+    min-height: 188px;
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .discovery-art {
+    border-radius: 6px;
+  }
+
+  .discovery-art .avatar-lg {
+    width: 64px;
+    height: 64px;
+  }
+
+  .discovery-card strong {
+    min-height: 0;
+    font-size: 0.9rem;
+  }
+
+  .discovery-card span,
+  .discovery-card-stat {
+    font-size: 0.78rem;
+  }
+
+  .floating-action {
+    width: 34px;
+    height: 34px;
+  }
+
+  .search-box {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 7px;
+  }
+
+  .search-box > svg {
+    display: none;
+  }
+
+  .score-panel {
+    min-height: calc(100vh - 250px);
+  }
+
+  .score-header {
+    min-height: auto;
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .score-title {
+    font-size: 1.35rem;
+  }
+
+  .score-subtitle,
+  .creator-pill,
+  .favorite-count-pill {
+    font-size: 0.82rem;
+  }
+
+  .score-body {
+    min-height: 430px;
+    max-height: calc(100vh - 245px);
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .alpha-tab-host {
+    min-height: 430px;
+    padding: 14px 12px 20px;
+  }
+
+  .score-tool-actions .icon-btn,
+  .score-primary-actions .icon-btn,
+  .playlist-adder .icon-btn {
+    width: 40px;
+    height: 40px;
+  }
+
+  .player-bar {
+    min-height: 142px;
+  }
+
+  .player-inner {
+    min-height: 142px;
+    padding: 10px 0;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-content: center;
+    gap: 10px;
+  }
+
+  .player-controls {
+    width: 100%;
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: auto auto minmax(112px, 1fr);
+    align-items: center;
+    gap: 8px;
+    overflow: visible;
+    padding-bottom: 0;
+  }
+
+  .player-controls .icon-btn {
+    width: 40px;
+    height: 40px;
+  }
+
+  .mini-control {
+    justify-content: flex-end;
+    min-width: 0;
+  }
+
+  .mini-control input {
+    width: 68px;
+    min-height: 38px;
+  }
+
   audio {
-    max-width: 185px;
+    grid-column: 1 / -1;
+    width: 100%;
+    max-width: none;
   }
 
   .playlist-adder,
@@ -2691,6 +2935,122 @@ audio {
     grid-template-columns: 1fr;
   }
 
+  .profile-hero {
+    min-height: auto;
+    padding: 14px;
+    gap: 14px;
+  }
+
+  .profile-identity {
+    align-items: center;
+    gap: 12px;
+  }
+
+  .profile-identity .avatar-lg {
+    width: 72px;
+    height: 72px;
+  }
+
+  .profile-hero h2 {
+    font-size: 1.45rem;
+  }
+
+  .profile-hero p {
+    font-size: 0.9rem;
+    overflow-wrap: anywhere;
+  }
+
+  .social-counts {
+    margin-top: 9px;
+    gap: 6px;
+  }
+
+  .social-counts a {
+    min-height: 32px;
+    padding: 4px 8px;
+  }
+
+  .profile-stats {
+    padding: 8px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .profile-stats span {
+    min-height: 54px;
+    padding: 9px 10px;
+  }
+
+  .profile-stats strong {
+    font-size: 1.15rem;
+  }
+
+  .profile-stats small {
+    font-size: 0.68rem;
+  }
+
+  .profile-grid {
+    gap: 14px;
+    margin-top: 14px;
+  }
+
+  .profile-panel,
+  .library-panel,
+  .settings-panel {
+    padding: 14px;
+  }
+
+  .section-header {
+    gap: 10px;
+  }
+
+  .section-header h2 {
+    font-size: 1.18rem;
+  }
+
+  .section-header p {
+    font-size: 0.84rem;
+  }
+
+  .section-header .btn {
+    min-height: 38px;
+    padding: 0 12px;
+  }
+
+  .playlist-layer-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .playlist-layer-card {
+    min-height: 88px;
+    padding: 10px 30px 10px 10px;
+    gap: 4px;
+  }
+
+  .playlist-layer-card svg {
+    top: 11px;
+    right: 10px;
+  }
+
+  .playlist-layer-card span {
+    font-size: 0.9rem;
+  }
+
+  .playlist-layer-card strong {
+    font-size: 1.25rem;
+  }
+
+  .playlist-layer-card small {
+    font-size: 0.78rem;
+    line-height: 1.25;
+  }
+
+  .playlist-layer-content {
+    margin-top: 12px;
+    padding-top: 12px;
+  }
+
   .settings-form-grid {
     grid-template-columns: 1fr;
   }
@@ -2703,8 +3063,41 @@ audio {
     grid-template-columns: 1fr;
   }
 
-  .playlist-layer-grid {
-    grid-template-columns: 1fr;
+  .app-shell {
+    padding-bottom: 170px;
+  }
+}
+
+@media (max-width: 420px) {
+  .topbar-inner,
+  .page-grid,
+  .generator-layout,
+  .viewer-page,
+  .settings-page,
+  .profile-page,
+  .player-inner {
+    width: min(100% - 16px, 1180px);
+  }
+
+  .nav-tabs a {
+    min-height: 36px;
+    padding: 0 9px;
+    font-size: 0.84rem;
+  }
+
+  .nav-tabs a svg,
+  .discovery-mode-tabs button svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .search-submit-btn {
+    min-width: 42px;
+    padding: 0 10px;
+  }
+
+  .playlist-stat {
+    white-space: normal;
   }
 }
 
