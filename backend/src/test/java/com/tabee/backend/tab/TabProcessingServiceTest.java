@@ -30,7 +30,7 @@ class TabProcessingServiceTest {
         );
 
         ResponseStatusException exception = assertThrows(ResponseStatusException.class, () ->
-                service.generateTabFromUpload(null, textFile));
+                service.generateTabFromUpload(null, textFile, "EADG"));
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
         assertEquals("Unsupported file format. Please upload a .wav, .mp3, or .mp4 file.", exception.getReason());
@@ -48,7 +48,7 @@ class TabProcessingServiceTest {
         );
 
         ResponseStatusException exception = assertThrows(ResponseStatusException.class, () ->
-                service.generateTabFromUpload(null, null));
+                service.generateTabFromUpload(null, null, "EADG"));
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
         assertEquals("Audio file is required", exception.getReason());
@@ -72,7 +72,7 @@ class TabProcessingServiceTest {
         );
 
         ResponseStatusException exception = assertThrows(ResponseStatusException.class, () ->
-                service.generateTabFromUpload(null, fakeMp3));
+                service.generateTabFromUpload(null, fakeMp3, "EADG"));
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
         assertEquals("Unsupported file format. Please upload a .wav, .mp3, or .mp4 file.", exception.getReason());
@@ -96,7 +96,7 @@ class TabProcessingServiceTest {
         );
 
         ResponseStatusException exception = assertThrows(ResponseStatusException.class, () ->
-                service.generateTabFromUpload(null, renamedText));
+                service.generateTabFromUpload(null, renamedText, "EADG"));
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
         assertEquals("Unsupported file format. Please upload a .wav, .mp3, or .mp4 file.", exception.getReason());

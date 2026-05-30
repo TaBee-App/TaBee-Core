@@ -43,7 +43,11 @@ public class AudioFileController {
     public AudioUploadAndProcessResponse uploadAndProcess(
             @AuthenticationPrincipal User currentUser,
             @ModelAttribute AudioUploadRequest request) {
-        Tab tab = tabProcessingService.generateTabFromUpload(this.currentUser.require(currentUser), request.getFile());
+        Tab tab = tabProcessingService.generateTabFromUpload(
+                this.currentUser.require(currentUser),
+                request.getFile(),
+                request.getTuning()
+        );
         return new AudioUploadAndProcessResponse(
                 "Audio processed successfully. The uploaded file was not stored in the database.",
                 tab.getId(),

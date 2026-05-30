@@ -15,7 +15,7 @@ class PitchConfig:
     """Configuration for bass pitch readout after pluck candidates."""
 
     fmin_hz: float = 32.0
-    fmax_hz: float = 120.0
+    fmax_hz: float = 180.0
     hop_length: int = 256
     frame_length: int = 8192
     min_read_delay_s: float = 0.02
@@ -99,6 +99,8 @@ class OnsetPitchEstimator(PitchEstimator):
             if (not np.isfinite(pitch)) or pitch <= 0.0 or conf < cfg.min_confidence:
                 pitch = 0.0
                 conf = 0.0
+            elif pitch < 45.0 and conf < 0.12:
+                pitch = self._correct_low_subharmonic(y, sr, t0, t1, pitch)
 
             pitches.append(pitch)
             confidences.append(conf)
@@ -110,3 +112,39 @@ class OnsetPitchEstimator(PitchEstimator):
         attack_weight = 1.0 - env
         span = self._cfg.max_read_delay_s - self._cfg.min_read_delay_s
         return self._cfg.min_read_delay_s + (attack_weight * span)
+
+    def _correct_low_subharmonic(
+        self,
+        y: np.ndarray,
+        sr: int,
+        t0: float,
+        t1: float,
+        pitch: float,
+    ) -> float:
+        doubled = pitch * 2.0
+        if doubled > self._cfg.fmax_hz:
+            return pitch
+
+        start = max(0, int(round(t0 * sr)))
+        end = min(len(y), int(round(t1 * sr)))
+        if end <= start + 16:
+            return pitch
+
+        segment = y[start:end]
+        window = np.hanning(segment.size)
+        spectrum = np.abs(np.fft.rfft(segment * window))
+        freqs = np.fft.rfftfreq(segment.size, d=1.0 / sr)
+
+        base_energy = self._band_energy(freqs, spectrum, pitch)
+        doubled_energy = self._band_energy(freqs, spectrum, doubled)
+
+        if doubled_energy > base_energy * 1.35:
+            return doubled
+        return pitch
+
+    def _band_energy(self, freqs: np.ndarray, spectrum: np.ndarray, center_hz: float) -> float:
+        width = max(2.0, center_hz * 0.04)
+        mask = (freqs >= center_hz - width) & (freqs <= center_hz + width)
+        if not np.any(mask):
+            return 0.0
+        return float(np.sum(spectrum[mask]))

@@ -12,6 +12,7 @@ export function GeneratePage() {
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
   const [instrument, setInstrument] = useState<Instrument>("bass");
+  const [tuning, setTuning] = useState<"EADG" | "BEADG">("EADG");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -33,7 +34,8 @@ export function GeneratePage() {
       const response = await generateTab({
         file,
         title: title || "Generated tab",
-        instrument
+        instrument,
+        tuning
       });
 
       upsertTab(response);
@@ -67,6 +69,14 @@ export function GeneratePage() {
           <select value={instrument} onChange={(event) => setInstrument(event.target.value as Instrument)}>
             <option value="bass">Bass</option>
             <option value="guitar">Guitar</option>
+          </select>
+        </label>
+
+        <label className="field">
+          <span>Tuning</span>
+          <select value={tuning} onChange={(event) => setTuning(event.target.value as "EADG" | "BEADG")}>
+            <option value="EADG">4-string standard bass (E A D G)</option>
+            <option value="BEADG">5-string bass (B E A D G)</option>
           </select>
         </label>
 

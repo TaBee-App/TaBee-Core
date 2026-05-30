@@ -19,6 +19,7 @@ public record GeneratedTabResult(
     }
 
     public record GeneratedNoteEvent(
+            Boolean isRest,
             BigDecimal time,
             BigDecimal duration,
             BigDecimal frequency,

@@ -30,6 +30,7 @@ export function TabViewerPage() {
   const [looping, setLooping] = useState(false);
   const [autoScroll, setAutoScroll] = useState(true);
   const [speed, setSpeed] = useState(100);
+  const [externalAudioTimeMs, setExternalAudioTimeMs] = useState(0);
   const [renderKey, setRenderKey] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -415,6 +416,8 @@ export function TabViewerPage() {
             looping={looping}
             autoScroll={autoScroll}
             speed={speed}
+            enableSynthPlayback={!tab.audioUrl}
+            externalTimeMs={externalAudioTimeMs}
             onReadyChange={setReady}
             onPlayingChange={setPlaying}
           />
@@ -431,6 +434,8 @@ export function TabViewerPage() {
         speed={speed}
         audioUrl={tab.audioUrl}
         onTogglePlay={() => setPlaying((current) => !current)}
+        onPlayingChange={setPlaying}
+        onTimeChange={setExternalAudioTimeMs}
         onLoopChange={setLooping}
         onAutoScrollChange={setAutoScroll}
         onSpeedChange={setSpeed}

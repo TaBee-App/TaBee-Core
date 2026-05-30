@@ -26,7 +26,7 @@ class TabGenerationService:
         self,
         fretboard: Optional[Fretboard] = None,
         optimizer: Optional[TabOptimizer] = None,
-        bass_octave_threshold_midi: int = 45,
+        bass_octave_threshold_midi: int = 52,
         tuning: str = "EADG",
     ) -> None:
         self._fretboard = fretboard or BassFretboard(tuning=tuning)
@@ -61,6 +61,7 @@ class TabGenerationService:
             assignments.append(
                 TabNoteAssignment(
                     time_s=note.time_s,
+                    duration_s=note.duration_s,
                     frequency_hz=note.frequency_hz,
                     confidence=note.confidence,
                     midi_note=midi_note,

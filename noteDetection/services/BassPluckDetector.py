@@ -61,15 +61,35 @@ class BassPluckDetector(PluckDetector):
 
         candidates: List[PluckCandidate] = []
         for peak in peaks:
+            attack_sample = self._refine_attack_sample(peak, envelope, sr)
             candidates.append(
                 PluckCandidate(
-                    time_s=peak / sr,
+                    time_s=attack_sample / sr,
                     strength=float(novelty[peak]),
-                    envelope_strength=float(envelope_score[peak]),
+                    envelope_strength=float(envelope_score[attack_sample]),
                     spectral_strength=float(spectral_score[peak]),
                 )
             )
         return candidates
+
+    def _refine_attack_sample(self, peak: int, envelope: np.ndarray, sr: int) -> int:
+        lookback = self._ms_to_samples(90.0, sr)
+        start = max(0, int(peak) - lookback)
+        end = min(envelope.size, int(peak) + 1)
+        if end <= start:
+            return int(peak)
+
+        window = envelope[start:end]
+        local_peak = float(np.max(window)) if window.size else 0.0
+        if local_peak <= 1e-9:
+            return int(peak)
+
+        threshold = max(local_peak * 0.30, float(envelope[int(peak)]) * 0.20)
+        above = np.flatnonzero(window >= threshold)
+        if above.size == 0:
+            return int(peak)
+
+        return start + int(above[0])
 
     def _band_limit(self, y: np.ndarray, sr: int) -> np.ndarray:
         fft = librosa.stft(y, n_fft=2048, hop_length=512)
