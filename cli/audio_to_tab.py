@@ -32,8 +32,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--tuning",
         default="EADG",
-        choices=["EADG", "BEADG"],
-        help="Bass tuning. EADG is standard 4-string bass; BEADG handles low notes below standard E1.",
+        choices=["EADG", "BEADG", "CGCF", "EBABDBGB"],
+        help="Bass tuning. EADG is standard 4-string bass, BEADG is 5-string bass, CGCF is dropped C, EBABDBGB is half-step down.",
     )
     parser.add_argument("--notes-per-line", type=int, default=16, help="ASCII tab notes per rendered line.")
     parser.add_argument("--print-json", action="store_true", help="Print JSON output to terminal too.")
@@ -64,10 +64,12 @@ def main() -> int:
         tuning=args.tuning,
     )
     string_numbers = (1, 2, 3, 4, 5) if args.tuning == "BEADG" else (1, 2, 3, 4)
+    string_labels = {1: "Gb", 2: "Db", 3: "Ab", 4: "Eb"} if args.tuning == "EBABDBGB" else None
     ascii_tab = renderer.render_ascii(
         assignments,
         notes_per_line=args.notes_per_line,
         string_numbers=string_numbers,
+        string_labels=string_labels,
     )
 
     json_out = Path(args.json_out) if args.json_out else audio_path.with_suffix(".tab.json")

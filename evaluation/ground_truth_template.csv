@@ -1,0 +1,3 @@
+sample_group,sample_name,prediction_json,onset_s,midi_number,allowed_positions
+Short bass phrases,test.wav,logs/test-smoke.tab.json,0.000,40,4:12|3:7|2:2
+

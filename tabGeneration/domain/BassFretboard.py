@@ -8,7 +8,7 @@ from ..ports.Fretboard import Fretboard
 
 class BassFretboard(Fretboard):
     """
-    Standard 4-string bass fretboard.
+    Bass fretboard model for supported 4- and 5-string tunings.
 
     String numbers are 1..4 from highest pitched string to lowest:
     1 -> G2 (MIDI 43)
@@ -30,6 +30,18 @@ class BassFretboard(Fretboard):
             3: 33,  # A1
             4: 28,  # E1
             5: 23,  # B0
+        },
+        "CGCF": {
+            1: 41,  # F2
+            2: 36,  # C2
+            3: 31,  # G1
+            4: 24,  # C1
+        },
+        "EBABDBGB": {
+            1: 42,  # Gb2
+            2: 37,  # Db2
+            3: 32,  # Ab1
+            4: 27,  # Eb1
         },
     }
 

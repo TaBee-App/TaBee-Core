@@ -12,7 +12,7 @@ export function GeneratePage() {
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
   const [instrument, setInstrument] = useState<Instrument>("bass");
-  const [tuning, setTuning] = useState<"EADG" | "BEADG">("EADG");
+  const [tuning, setTuning] = useState<"EADG" | "BEADG" | "CGCF" | "EBABDBGB">("EADG");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -74,9 +74,11 @@ export function GeneratePage() {
 
         <label className="field">
           <span>Tuning</span>
-          <select value={tuning} onChange={(event) => setTuning(event.target.value as "EADG" | "BEADG")}>
+          <select value={tuning} onChange={(event) => setTuning(event.target.value as "EADG" | "BEADG" | "CGCF" | "EBABDBGB")}>
             <option value="EADG">4-string standard bass (E A D G)</option>
             <option value="BEADG">5-string bass (B E A D G)</option>
+            <option value="CGCF">4-string dropped C bass (C G C F)</option>
+            <option value="EBABDBGB">4-string half-step down (Eb Ab Db Gb)</option>
           </select>
         </label>
 

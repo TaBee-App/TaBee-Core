@@ -24,7 +24,7 @@ import com.tabee.backend.user.User;
 @Service
 public class TabProcessingService {
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of(".wav", ".mp4", ".mp3");
-    private static final Set<String> ALLOWED_TUNINGS = Set.of("EADG", "BEADG");
+    private static final Set<String> ALLOWED_TUNINGS = Set.of("EADG", "BEADG", "CGCF", "EBABDBGB");
     private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
             "audio/wav",
             "audio/x-wav",
@@ -208,7 +208,7 @@ public class TabProcessingService {
         if (!ALLOWED_TUNINGS.contains(normalized)) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Unsupported tuning. Please use EADG or BEADG."
+                    "Unsupported tuning. Please use EADG, BEADG, CGCF, or EBABDBGB."
             );
         }
 

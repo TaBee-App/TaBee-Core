@@ -2113,6 +2113,8 @@ a {
 }
 
 .score-body {
+  position: relative;
+  z-index: 0;
   min-height: 520px;
   overflow: auto;
   color: #111;
@@ -2145,11 +2147,14 @@ a {
 }
 
 .alpha-tab-host {
+  position: relative;
+  z-index: 0;
   min-height: 520px;
   padding: 22px 18px 28px;
 }
 
 .at-cursor-beat {
+  z-index: 1 !important;
   width: 4px;
   margin-left: -2px;
   background: rgba(224, 184, 78, 0.72);
@@ -2157,6 +2162,7 @@ a {
 
 .at-cursor-bar.enable,
 .at-cursor-bar {
+  z-index: 1 !important;
   background: rgba(228, 189, 79, 0.18);
 }
 
@@ -2170,7 +2176,7 @@ a {
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 30;
+  z-index: 55;
   min-height: 74px;
   border-top: 1px solid var(--line);
   background: var(--dock-bg);

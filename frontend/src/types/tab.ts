@@ -31,7 +31,7 @@ export interface GenerateTabRequest {
   file: File;
   title: string;
   instrument: Instrument;
-  tuning: "EADG" | "BEADG";
+  tuning: "EADG" | "BEADG" | "CGCF" | "EBABDBGB";
 }
 
 export interface GenerateTabResponse {

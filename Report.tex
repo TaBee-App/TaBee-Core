@@ -183,7 +183,6 @@
         \Large{\theauthor} \\
         \vspace{4cm}
         \large{Department: Computer Engineering} \\
-        \large{Division: Computer Engineering} \\
         \vspace{1.5cm}
         \large{Advisor: Assoc. Prof. Dr. Feza Buzluca} \\
         \vspace{\fill} % Fill out until the page end
@@ -263,9 +262,9 @@ Projenin son halinde TaBee, yalnızca ses dosyasını tablatüre dönüştüren 
 \section{Introduction}
 
 \subsection{Motivation}
-Automatic Music Transcription (AMT) is a significant challenge in Music Information Retrieval (MIR). While standard notation systems (like sheet music) are ubiquitous, they fail to provide the specific physical execution instructions required for stringed instruments. For a bass guitarist, a note's frequency can be produced at various positions on the fretboard, creating an optimization problem where playability (minimizing hand strain) is as important as musical accuracy. Current commercial tools (e.g., Melodyne, Riffstation) often focus on generic frequency detection or chord recognition, ignoring the biomechanical constraints of bass guitar performance. 
+Automatic Music Transcription (AMT) is one of the major challenges of Music Information Retrieval (MIR). The standard notation (including sheet music) systems are widely used and apply to most instruments, but they do not offer the specific physical execution instructions that are necessary for stringed instruments. The frequency of a note can be achieved on the fretboard in a variety of different places, and in order to play the note properly, it has to be in a position that is as comfortable as possible to the bass guitarist, which can be a challenging optimization problem. Existing commercial software (such as Melodyne, Riffstation) tend to be based on general frequency detection and chord recognition, without taking into account the biomechanics of bass guitar playing. 
 
-The TaBee project aims to solve this by providing an end-to-end transcription pipeline that converts raw audio into optimized tablature. This system empowers musicians by reducing the time-intensive process of manual transcription.
+The TaBee project tries to address this by offering a complete transcription pipeline that generates optimized transcription in tablature format from raw audio. This system gives musicians more power, as it saves a time-consuming manual transcription process.
 
 \subsection{Problem Definition}
 The problem consists of two main stages:
@@ -287,26 +286,29 @@ The project scope includes the implementation of a full-stack web application wi
 % User -> React Frontend -> Java Backend -> Python DSP CLI -> Database (PostgreSQL)]
 
 \subsection{Thesis/Project Contribution}
-This study contributes a deterministic, biomechanical cost-function approach to tablature generation. Unlike stochastic methods (e.g., Genetic Algorithms), our approach utilizes graph-based Viterbi optimization to provide a globally optimal solution with $O(N \cdot S^2)$ time complexity, making it suitable for real-time web-based applications.
+This work adds a biomechanically-inspired cost-function-based approach to tablature generation in a deterministic manner. In contrast with the stochastic methods (e.g., the Genetic Algorithms), we use graph-based Viterbi optimization that yields a globally optimal solution with time complexity $O(N \cdot S^2)$ and is suitable for real-time web-based applications.
+
 \newpage
 \section{Comparative Literature Survey}
 
 \subsection{Automatic Music Transcription (AMT)}
-Automatic Music Transcription (AMT) is a multi-dimensional challenge within the field of Music Information Retrieval (MIR). Unlike piano transcription, which primarily focuses on onset and duration detection, bass guitar transcription requires solving a fundamental physical ambiguity: the same pitch can be generated at multiple fret-string combinations. Thus, a robust AMT system must integrate digital signal processing (DSP) with a physical constraint-aware optimization layer.
+Automatic Music Transcription (AMT) is a multi-dimensional problem in Music Information Retrieval (MIR). The difficulty in bass guitar transcription is not so much the detection of onsets and durations, as it is the problem of pitch ambiguity at the fundamental level: a given pitch can be played at a number of different combinations of frets and strings. Therefore, a high-quality AMT system needs to combine digital signal processing (DSP) and a physical constraint-aware optimization layer.
+
 
 \subsection{Literature Analysis on Tablature Allocation}
-The methodologies for fretboard mapping can be broadly classified into three categories: rule-based systems, metaheuristic global optimization (Genetic Algorithms), and probabilistic sequential models (Hidden Markov Models).
+There are three general approaches to fretboard mapping: rule-based systems, global optimization (GA) and probabilistic sequential models (HMMs).
 
 \begin{enumerate}
-    \item \textbf{Rule-Based Heuristics:} Early research relied on hand-crafted geometric constraints—such as penalizing distance between consecutive notes. While effective for simple melodies, these models fail to capture "phrasing" and often struggle with complex syncopations, leading to mechanically "stiff" tablatures.
+    \item \textbf{Rule-Based Heuristics:} Early research was based on manually designed geometric constraints, including penalizing distance between successive notes. They work well for simpler melodies, but cannot be used to convey "phrasing" and are not very effective at complex syncopations, creating too stiff tablatures.
     
-    \item \textbf{Genetic Algorithms (GA):} As demonstrated by Tuohy and Potter \cite{Tuohy2005}, GA approaches represent the fretboard allocation as a chromosome-based evolution problem. Although these models excel at finding near-optimal solutions for complex fingerings, their stochastic nature leads to significant computational overhead, making them poorly suited for real-time applications or high-throughput web backends.
+    \item \textbf{Genetic Algorithms (GA):} GA approaches, as shown in Tuohy and Potter \cite{Tuohy2005} are designed to solve the problem of fretboard allocation as an evolutionary problem over the chromosome. While they are good at solving near-optimal solutions for complex fingerings, they are stochastic models and can be very expensive to compute and are not well-suited to real-time applications or high throughput web backends.
     
-    \item \textbf{Probabilistic Models (HMM/Viterbi):} Hori et al. \cite{Hori2013} introduced HMM-based approaches, treating fingering as a state-space transition problem. These models leverage dynamic programming (Viterbi), which reduces the search space complexity from exponential $O(S^N)$ to polynomial $O(N \cdot S^2)$, where $N$ is the note count and $S$ is the state space size.
+    \item \textbf{Probabilistic Models (HMM/Viterbi):} Hori et al. \citet{Hori2013} proposed HMM-based methods, which saw fingering as a problem of transitioning through a state space. These models use dynamic programming (Viterbi) which can cut the search space complexity from exponential $O(S^N)$ to polynomial $O(N \cdot S^2)$, where $N$ is the number of notes and $S$ is the size of the state space.
+
 \end{enumerate}
 
 \subsection{Comparative Analysis}
-The following table provides a comparative summary of the discussed approaches based on the criteria relevant to the TaBee system's requirements:
+This table shows a summary of the discussed approaches, comparing them according to criteria, which are relevant to the requirements of the TaBee system:
 
 \begin{table}[H]
     \centering
@@ -325,18 +327,19 @@ The following table provides a comparative summary of the discussed approaches b
 \end{table}
 
 \subsection{Existing Commercial Solutions}
-Commercial solutions such as Celemony Melodyne \cite{Melodyne} and Riffstation \cite{Riffstation} dominate the market but operate as "black boxes." Melodyne uses advanced polyphonic spectral separation but lacks native instrument-specific fretboard knowledge; it outputs abstract pitch data. Riffstation provides chord extraction but ignores the single-note pluck dynamics required for bassline accuracy. TaBee distinguishes itself by providing an open-source, extensible DSP-to-Tab pipeline that explicitly maps frequencies onto a 4-string bass neck via a deterministic, cost-aware optimization function.
+The commercial products, like Celemony Melodyne \cite{Melodyne} and Riffstation \cite{Riffstation} are the most common solutions in the market, but they are considered as "black boxes". Melodyne features a very powerful polyphonic spectral separation, but doesn't have instrument-specific fretboard information: it will only generate abstract pitch information. Riffstation offers chord extraction, but it does not take into account the single-note pluck dynamics needed to obtain bassline accuracy. TaBee is distinguished by its openness, extendability and its ability to explicitly map frequencies onto a 4 string bass neck using a deterministic, cost-aware optimisation function.
 
 \subsection{Contribution of this Study}
-This project improves upon existing probabilistic models by replacing training-heavy HMMs with a deterministic cost-function-driven Viterbi algorithm. By decoupling the DSP (Python) and optimization (domain layer) processes, TaBee maintains high musical accuracy while ensuring a response time suitable for interactive web environments, a critical feature missing in most academic models.
+This project builds on the current probabilistic models, in which the underlying algorithm is based on HMMs (which require a lot of training) instead of the Viterbi algorithm, which only has a cost-function. This separation of the DSP (Python) and optimization (domain layer) processes allows for the music to be synthesized accurately yet deliver a response time appropriate for interactive web environments, a feature not found in most academic models.
 
 \newpage
 \section{Developed Approach and System Model}
 \label{sec:system_model}
 
-TaBee is designed as an end-to-end web platform for producing, storing, viewing, and sharing bass guitar tablature generated from audio recordings. The system is not limited to a standalone transcription script; it combines a modern web interface, a Spring Boot REST backend, a PostgreSQL persistence layer, and a Python-based digital signal processing (DSP) core. This separation allows the user-facing product features and the computational audio analysis workflow to evolve independently while still forming a single coherent application.
+TaBee has been created as an end-to-end web application for creating, storing, viewing and sharing bass guitar tab from audio recordings. It can be used as a standalone transcription script, but the system includes a modern web interface, a Spring Boot REST backend, a PostgreSQL persistence layer and a digital signal processing (DSP) core written in Python. This separation enables the user-facing product characteristics and the computational audio analysis workflow to develop separately and remain unified, as one single application.
 
-The central engineering problem is twofold. First, the system must transform a continuous audio signal into a discrete sequence of note events with timing, pitch, confidence, and duration information. Second, those abstract notes must be converted into physically playable bass tablature. A pitch such as D2, for example, can be played on different strings and frets depending on context. Therefore, TaBee does not stop at pitch detection; it applies a playability optimization stage that chooses a globally coherent string/fret path across the whole bass line.
+
+There are two key engineering challenges. First, it is required to convert the continuous audio signal into a discrete set of note events, specifying when, what, how much, and how confident they are, and the duration (just how long, or brief). Secondly, the abstract notes need to be transcribed as actual bass tablature. D2 (for example) can be played on different strings and frets depending on context. So, TaBee doesn't just detect the pitches, it adds a playability optimization stage that takes a string/fret path through the entire bass line that is coherent across the board.
 
 \begin{figure}[H]
     \centering
@@ -345,22 +348,22 @@ The central engineering problem is twofold. First, the system must transform a c
     \label{fig:tabee_system_architecture}
 \end{figure}
 
-At a high level, the workflow begins when a user uploads an audio file from the generation page. The backend validates the file, creates a temporary processing workspace, invokes the Python command-line processor, reads the generated JSON result, persists the tab metadata and generated note events, stores the original audio file, and returns the created tab to the frontend. The frontend then renders the result as interactive tablature and provides playback-oriented controls for studying the generated output.
+In a high-level view, the procedure starts with documents having uploaded an audio file from the generation page. This is done on the backend by validating the file, then creating a temp workspace for processing, running the Python command line processor, reading the generated output JSON result, persisting the tab metadata and generated note events, storing the original audio file, and returning the generated tab to the frontend. At the front end, the output is then displayed as interactive tab and offers playback-oriented controls for studying the output generated by the engine.
 
 \subsection{System Components}
 
-The implementation is organized around four major components:
+It is organized around four major components of implementation:
 
 \begin{itemize}
-    \item \textbf{Frontend Application:} A React and TypeScript application bundled with Vite. It provides authentication screens, dashboard and discovery views, tab generation, tab viewing, playlists, profile pages, and user interaction features such as favorites and following.
-    \item \textbf{Backend Application:} A Java Spring Boot REST API responsible for authentication, authorization, tab ownership, playlist management, social interactions, media serving, and orchestration of the audio-to-tab processing workflow.
-    \item \textbf{Python Processing Core:} A modular Python subsystem containing the note detection and tab generation logic. It uses \texttt{librosa} and \texttt{numpy} for audio analysis and separates audio reading, pitch estimation, fretboard modeling, and optimization behind explicit interfaces.
-    \item \textbf{Persistence and Media Storage:} PostgreSQL stores users, tabs, playlists, relationships, and generated tab metadata. Uploaded audio files are stored separately and linked from the generated tab payload so that the tab view can provide synchronized listening and visual inspection.
+    \item \textbf{Frontend Application:} A React/TypeScript app with Vite. It includes authentication screens, dashboard and discovery views, tab generation and tab viewing, playlists, profile pages and user interaction features like favorites and following.
+    \item \textbf{Backend Application:} A REST API built in the Java Spring Boot framework that handles user authentication, authorization, tab ownership, playlist management, social interactions, media serving, and orchestration of the audio-to-tab processing workflow.
+    \item \textbf{Python Processing Core:} Note Detection and Tab Generation Subsystem implemented in Python Modular Code. It is based on \texttt{librosa} and \texttt{numpy} for audio analysis, and it separates the reading of the audio files, pitch estimation, fretboard modeling and optimization into explicit interfaces.
+    \item \textbf{Persistence and Media Storage:} PostgreSQL is used to store tab metadata, relationships, users, playlists. Separate audio files are uploaded and then referenced in the generated tab payload which will allow the tab view to display the tab and listen to the audio at the same time, enabling a visual inspection of the tab.
 \end{itemize}
 
 \subsection{Data and Persistence Model}
 
-TaBee uses a hybrid persistence model. Relational tables are used for stable application entities and relationships, while the generated musical payload is stored as structured JSON. This design keeps frequently queried product data, such as users, titles, playlists, and favorite counts, normalized and efficient, while preserving flexibility for generated note events whose shape may evolve as the transcription engine improves.
+TaBee uses a mixed persistence model. Stable application entities are stored in relational tables, and the generated musical payload as structured JSON. This design allows for the data of the most frequently requested information to remain normalized and efficient, such as users, titles, playlists, favorite counts etc., and also provides flexibility for the generated note events, whose shape can be changed as the transcription engine gets better.
 
 \begin{figure}[H]
     \centering
@@ -371,7 +374,7 @@ TaBee uses a hybrid persistence model. Relational tables are used for stable app
 
 \subsubsection{Core Musical Entities}
 
-The central entity in the system is \texttt{Tab}. A tab belongs to a user, has a title and optional artist metadata, and points to a \texttt{TabData} record containing the generated musical payload. This separation allows the application to list, search, favorite, and organize tabs without repeatedly loading the full generated note structure.
+The main entity in the system is \texttt{Tab}. A tab is owned by a user, and it has a name and possibly artist metadata, with a pointer to a record (called \texttt{TabData}) that stores the generated musical data. The separation helps the application to list, search, favorite and organize tabs without loading the complete generated note structure every time.
 
 \begin{table}[H]
     \centering
@@ -392,39 +395,23 @@ The central entity in the system is \texttt{Tab}. A tab belongs to a user, has a
     \label{tab:tabee_core_entities}
 \end{table}
 
-The generated payload includes the source audio reference, instrument type, tuning, estimated tempo, summary statistics, and a list of generated note events. Each note event may include time, duration, frequency, pitch confidence, note name, MIDI number, fret, and string number. This structure directly supports the frontend renderer because the client can reconstruct the musical result from one API response.
+The resulting payload contains a summary of statistics, a list of note events generated, and also instrument type, source audio reference, estimated tempo, and tuning. Time, duration, frequency, note name, MIDI number, fret, string number, note confidence can be added to each note event. This is directly useful to the frontend renderer as the client can build the musical result from a single API response.
 
 \subsubsection{Social and Discovery Entities}
 
-TaBee includes a separate set of relational entities for the social and organizational
-behavior of the platform. FavoriteTab records which users liked or saved a tab, while
-UserPlaylist represents playlists created by users. The many-to-many relation
-between playlists and tabs is modeled through PlaylistTab, allowing one playlist to
-contain multiple tabs and one tab to appear in multiple playlists. SavedPlaylist
-stores playlists that a user wants to keep without becoming the owner of that playlist,
-and UserFollow represents follow relationships between user profiles. These tables
-support discovery pages, public profiles, favorite counts, saved collections, and playlist-
-based organization while keeping ownership and referential integrity clear.
-This data model gives the generated tablature a social lifecycle after the audio process-
-ing stage is completed. A tab remains owned by its creator, but other musicians can
-favorite it, add it to their own playlists, or discover it through search and public profile
-pages. Similarly, playlists can be used as rehearsal sets, learning collections, or shared
-musical references for people who play together. The follow relationship strengthens
-this workflow by allowing users, especially bandmates or classmates, to keep track of
-each other’s generated tabs and playlists. In this way, TaBee connects the technical
-transcription output with the collaborative habits of musician
+TaBee also has a dedicated group of social and organizational behavior relational entities. UserPlaylist contains user-created playlists, and FavoriteTab contains which users liked/saved a tab. The many-to-many relationship between playlists and tabs is represented by PlaylistTab, which lets multiple tabs be associated with a single playlist and multiple playlists be associated with a single tab. SavedPlaylist is a type of playlist that a user wants to store but for which he or she is not the owner, and UserFollow is a type of follow relationship between user profiles. These tables enable discovery pages, public profiles, favourite counts, saved collections and playlist-based organisation without compromising on the ownership/referential integrity of the tables. When finished with the audio processing phase, this data model is given to the generated tablature, creating a social lifecycle for it. A tab will be owned by its creator, but others can favorite it, add it to their playlists, or find it via search and public profile pages. Likewise, a playlist can be a set of rehearsal pieces, a learning collection or a common musical reference to pieces which are being performed together. The followin relationship enhances this workflow by enabling users, particularly bandmates and/or classmates, to remain updated on one another's created tabs and playlists. In this way, TaBee bridges the gap between the technical transcription and collaborative habits of musicians.
 
 \subsubsection{Audio Storage Model}
 
-Generated note data and raw media are stored separately. During generation, the backend saves the uploaded file into a temporary processing directory, passes it to the Python processor, and later stores the audio file through the backend's audio storage service. The final tab JSON contains a reference to this stored audio asset. This avoids placing large binary audio data inside PostgreSQL rows while still letting the tab viewer retrieve the audio for playback.
+Note data generated and raw media are kept apart. When a file is uploaded during generation, it is saved in the temp processing folder with the back-end, sent to the Python processor, and then stored with the back-end's audio storage service. This is referenced in the final tab JSON. This prevents storing large binary audio data in the PostgreSQL rows, but allows tab view to load the audio to be played.
 
 \subsubsection{Rationale for Hybrid Relational and JSON Storage}
 
-The chosen storage model balances query performance and musical flexibility. Relational tables are appropriate for stable product concepts such as ownership, playlists, and favorites. Generated tablature, however, is more naturally represented as a nested document because every note event contains multiple musical and physical properties, and future versions may add fields such as articulation, quantized duration, beat position, or correction history. Storing this payload as JSON avoids unnecessary relational fragmentation while keeping the API contract simple for the frontend.
+The selected storage model provides high query performance and flexibility in the music. Stable and lasting product concepts like ownership, playlists, and favorites work well in relational tables. However, generated tablature is most naturally stored in a nested document, since it has many musical and physical properties in each note event and future versions may add fields like articulation, quantized duration, beat position, or correction history. Having this payload stored as JSON removes the need to have unnecessary relational fragmentation and simplifies the API contract for the front-end.
 
 \subsection{Structural Model}
 
-The TaBee backend is organized by feature domains rather than by broad technical folders. This means tab-related controllers, DTOs, services, repositories, and entities are grouped under the \texttt{tab} domain; user functionality is grouped under \texttt{user}; playlists are grouped under \texttt{playlist}; and authentication, security, audio, and common infrastructure are isolated in their own packages. This organization makes the codebase easier to navigate because each feature area contains its own web, service, and persistence concerns.
+The TaBee backend is structured around feature domains, not technical folders. This implies that entities, repositories, services, and user functionality are packaged under \texttt{user}, playlists under \texttt{playlist}, authentication and security under \texttt{authentication}, audio under \texttt{audio} and common infrastructure under \texttt{common infrastructure} and tab-related entities, repositories, services, and user functionality are packaged under \texttt{tab}. This organisation provides the code being easier to navigate since it separates the concerns of each feature area in the web, service, and persistence layers.
 
 \begin{figure}[H]
     \centering
@@ -434,14 +421,14 @@ The TaBee backend is organized by feature domains rather than by broad technical
 \end{figure}
 
 \begin{itemize}
-    \item \textbf{Controllers:} REST controllers such as \texttt{TabController}, \texttt{AudioFileController}, \texttt{PlaylistController}, \texttt{UserController}, and \texttt{AuthController} expose HTTP endpoints and convert requests into service calls.
-    \item \textbf{DTOs:} Request and response DTOs define the API boundary. They prevent persistence entities from becoming the public contract and make it possible to evolve internal models independently.
-    \item \textbf{Services:} Service classes such as \texttt{TabService}, \texttt{TabProcessingService}, \texttt{PlaylistService}, and \texttt{AuthService} implement application-level behavior, validation, ownership checks, and orchestration.
-    \item \textbf{Repositories:} Spring Data JPA repositories encapsulate persistence operations and keep database access out of controllers.
-    \item \textbf{Security and Common Infrastructure:} Security filters, token services, exception handling, image storage, health checks, and media serving are separated from core domain behavior.
+    \item \textbf{Controllers:} Controllers (e.g.,  as \texttt{TabController}, \texttt{AudioFileController}, \texttt{PlaylistController}, \texttt{UserController}, and \texttt{AuthController} are REST controllers whose purpose is to expose an HTTP endpoint and transform requests into service calls.
+    \item \textbf{DTOs:} The API boundary is defined by "DTOs": Request and Response DTOs. They make it hard for persistence entities to be the public contract, and allow for internal model evolution.
+    \item \textbf{Services:}     Application-level behavior, validation, ownership checks, and orchestration are implemented via the services, e.g., \texttt{TabService} and \texttt{TabProcessingService} and \texttt{PlaylistService} and \texttt{AuthService}.
+    \item \textbf{Repositories:} Spring Data JPA repositories: Hide persistence operations in repositories and separate the database from the controllers.
+    \item \textbf{Security and Common Infrastructure:} Security Filters, Token Services, Exception Handling, Image Storage, Health Checking and Media Serving are isolated from the core domain behaviour.
 \end{itemize}
 
-The Python core follows an even more explicit ports-and-adapters style. The note detection package defines interfaces such as \texttt{AudioReader} and \texttt{PitchEstimator}; the tab generation package defines interfaces such as \texttt{Fretboard} and \texttt{TabOptimizer}. Concrete implementations, such as \texttt{LibrosaAudioReader}, \texttt{OnsetPitchEstimator}, \texttt{BassFretboard}, and \texttt{PlayabilityOptimizer}, can therefore be replaced without rewriting the whole pipeline.
+The Python core is more explicit, in the style of ports and adapters. The note detection package specifies interfaces like \texttt{AudioReader} and \texttt{PitchEstimator} while the tab generation package specifies interfaces like \texttt{Fretboard} and \texttt{TabOptimizer}. Concrete implementations (LibrosaAudioReader, OnsetPitchEstimator, BassFretboard, PlayabilityOptimizer) can then be replaced, without rewriting the entire pipeline.
 
 \begin{figure}[H]
     \centering
@@ -452,7 +439,7 @@ The Python core follows an even more explicit ports-and-adapters style. The note
 
 \subsection{Object-Oriented Design and Extensibility}
 
-Object-oriented design principles are central to TaBee's implementation because the project is expected to evolve beyond a single transcription algorithm. Future versions may use different pitch estimators, alternative fretboard optimizers, additional instruments, new tunings, or different storage/rendering mechanisms. The current design therefore avoids hard-coding every decision into one monolithic pipeline and instead separates responsibilities through classes, interfaces, DTOs, repositories, and service boundaries.
+The principles of object-oriented design are at the core of TaBee's implementation, given the potential for the project to expand beyond a single algorithm for transcription. New pitch estimators, alternative fretboard optimizers, new instruments, new tunings, and other storage/rendering mechanisms will be added to future versions. This current design, therefore, does not hardcode all of these decisions into one monolith, but instead distributes these responsibilities into classes, interfaces, DTOs, repositories and service boundaries.
 
 \begin{figure}[H]
     \centering
@@ -463,13 +450,13 @@ Object-oriented design principles are central to TaBee's implementation because 
 
 \subsubsection{Open/Closed Principle}
 
-The Open/Closed Principle states that software entities should be open for extension but closed for modification. TaBee applies this principle most clearly in the Python transcription core. \texttt{TabGenerationService} depends on the \texttt{Fretboard} and \texttt{TabOptimizer} abstractions rather than depending directly on one fixed fretboard or one fixed optimization algorithm. As a result, a future optimizer based on machine learning, rule tuning, or genre-specific playability could be introduced as a new implementation of \texttt{TabOptimizer} without rewriting \texttt{TabGenerationService}.
+The Open/Closed Principle: "A software organization should be open for extension and close for modification. This is most clearly seen in TaBee's Python transcription core, which relies on the abstraction of \texttt{Fretboard} and \texttt{TabOptimizer} and doesn't rely on a specific fretboard or a specific optimization algorithm. Therefore, a new machine learning based optimizer, rule tuning, or a new genre specific playability based optimizer may be introduced as a new implementation of \texttt{TabOptimizer} without modifying \texttt{TabGenerationService} itself.
 
-The same extension point exists in note detection. \texttt{NoteDetectionPipeline} can work with any implementation of \texttt{PitchEstimator}. The current implementation uses \texttt{OnsetPitchEstimator}, which relies on pYIN, but a future neural pitch estimator or a different DSP method could be introduced behind the same interface. The pipeline would continue to coordinate preprocessing, pluck detection, pitch estimation, tempo estimation, and note construction without knowing the internal details of the estimator.
+In note detection, there is also the same extension point, \texttt{NoteDetectionPipeline} can be used with any type of \texttt{PitchEstimator} implementation. The current implementation is based on \texttt{OnsetPitchEstimator} which is based on pYIN, but a neural estimator of pitch or a different DSP method could be added in the future, under the same name. The pipeline would also coordinate the preprocessing, pluck detection, pitch estimation, tempo estimation and note construction without any knowledge of the internal workings of the estimator.
 
 \subsubsection{Dependency Inversion Principle}
 
-The Dependency Inversion Principle is also visible in the core design. High-level modules depend on abstractions, not concrete low-level details:
+The Dependency Inversion Principle, too, is reflected in the core design. High level modules rely on the abstractions rather than low level details:
 
 \begin{itemize}
     \item \texttt{NoteDetectionService} depends on \texttt{AudioReader}, while \texttt{LibrosaAudioReader} is only one concrete adapter.
@@ -477,19 +464,19 @@ The Dependency Inversion Principle is also visible in the core design. High-leve
     \item \texttt{TabGenerationService} depends on \texttt{Fretboard} and \texttt{TabOptimizer}, while \texttt{BassFretboard} and \texttt{PlayabilityOptimizer} provide the default bass-specific behavior.
 \end{itemize}
 
-This design keeps the main orchestration logic independent from external libraries and algorithm details. For example, \texttt{librosa} is used inside concrete audio and pitch implementations, but the higher-level pipeline is not written as a direct wrapper around \texttt{librosa}. This improves testability and makes future replacement possible.
+This design isolates main orchestration logic from external libraries or algorithm details. For instance, the pipeline is not directly wrapped as a concrete audio and pitch implementation, but rather \texttt{librosa} is used within them. This makes it easier to test and allows for future replacement.
 
 \subsubsection{Single Responsibility and Encapsulation}
 
-The implementation separates the audio-to-tab workflow into small classes with narrow responsibilities. \texttt{NoteDetectionPipeline} coordinates the detection process, but the actual pitch estimation behavior is delegated to \texttt{OnsetPitchEstimator}. \texttt{BassFretboard} only models tuning, string numbers, fret limits, and candidate generation. \texttt{PlayabilityOptimizer} only evaluates local and transition costs and computes the optimal path. \texttt{TabExportService} converts internal results into JSON output, while \texttt{TabRenderer} handles ASCII tablature rendering.
+The implementation is divided into small classes with narrow responsibilities, with the process of detecting pitch separated into \texttt{NoteDetectionPipeline} that coordinates the detection process, and \texttt{OnsetPitchEstimator} that contains the pitch estimation behavior. \texttt{BassFretboard} models tuning, string numbers, fret limits and generates candidates, while \texttt{PlayabilityOptimizer} evaluates local and transition costs and computes the optimal path. \texttt{TabExportService} transforms the internal results to JSON output and \texttt{TabRenderer} renders the ASCII tab.
 
-This separation supports encapsulation. The movement-cost formula is hidden inside \texttt{PlayabilityOptimizer}; callers only ask it to optimize a candidate sequence. The tuning and fret calculations are hidden inside \texttt{BassFretboard}; callers only ask for valid positions. The backend similarly encapsulates persistence through repositories, application behavior through services, and API contracts through DTOs.
+Such separation facilitates encapsulation. The movement-cost formula is buried in \texttt{PlayabilityOptimizer}; the formula is only used to optimize a candidate sequence. The tuning and fret calculations are all in \texttt{BassFretboard} and the caller only requests a valid position. The backend, too, wraps up persistence in repositories, application behaviour in services and API contracts in the DTOs.
 
 \subsubsection{Interface Segregation and Substitutability}
 
-TaBee uses small, role-specific interfaces rather than one large transcription interface. \texttt{AudioReader} is responsible only for loading audio. \texttt{PitchEstimator} is responsible only for estimating pitch values from pluck candidates. \texttt{Fretboard} is responsible only for returning valid physical positions. \texttt{TabOptimizer} is responsible only for selecting an optimized path. This follows the Interface Segregation Principle because each class depends only on the operations it actually needs.
+TaBee provides small interfaces, each of which has a particular specific function, instead of a single transcription interface. \texttt{AudioReader} is for loading audio, \texttt{PitchEstimator} is for estimating pitch values from pluck candidates, \texttt{Fretboard} is for returning valid physical positions, and \texttt{TabOptimizer} is for selecting an optimized path. This adheres to the Interface Segregation Principle as it makes a class only depend on the operations that it requires.
 
-The design also supports substitutability. Any class that implements \texttt{TabOptimizer} can be passed to \texttt{TabGenerationService} as long as it returns a valid sequence of fret positions for the given candidates. Any class that implements \texttt{PitchEstimator} can be used by \texttt{NoteDetectionPipeline} as long as it returns pitch and confidence sequences aligned with pluck candidates. This means new implementations can be added with limited risk to existing callers.
+The design also is substitutive. Any class that implements \texttt{TabOptimizer} can be given to \texttt{TabGenerationService} as long as it returns a valid sequence of fret positions, by providing the fret positions of the given candidates. As long as any class that implements \texttt{PitchEstimator} returns pitch and confidence sequences which are aligned with pluck candidates, it can be used by \texttt{NoteDetectionPipeline}. This allows new implementations to be added to the existing callers with minimal risk.
 
 \begin{table}[H]
     \centering
@@ -514,7 +501,7 @@ The design also supports substitutability. Any class that implements \texttt{Tab
 
 \subsection{Dynamic Model: End-to-End Tab Generation Workflow}
 
-The main dynamic workflow of TaBee is the generation of a tab from an uploaded audio file. The implementation uses process isolation between the Java web application and the Python DSP core. The Spring Boot backend invokes \texttt{cli/audio\_to\_tab.py} as an external process and waits for the result with a configurable timeout. This design keeps the Python audio dependencies outside the Java runtime and gives the backend a clear failure boundary: if audio processing fails, times out, or returns invalid JSON, the backend can return a controlled error response.
+The primary dynamic process of TaBee is to create a tab from a recorded audio file. This implementation employs process isolation between the Java Web App and the Python DSP core. The Spring Boot backend calls \texttt{cli/audio\_to\_tab.py} with a call to an external process, and waits for the result after a configured timeout. This design places all the Python audio dependencies outside of the Java runtime and provides the backend with a more clearly-defined failure boundary: when the audio processing fails, times out, or results in an invalid JSON, the backend may return a controlled error message.
 
 \begin{landscape}
 \begin{figure}[H]
@@ -528,19 +515,19 @@ The main dynamic workflow of TaBee is the generation of a tab from an uploaded a
 The workflow proceeds as follows:
 
 \begin{enumerate}
-    \item The user selects an audio file from the generation screen. The frontend currently accepts the user's title and instrument choice and sends the file to the backend generation endpoint.
-    \item The backend validates that the uploaded file is present and that its extension and content type are supported. The current implementation supports \texttt{.wav}, \texttt{.mp3}, and \texttt{.mp4} inputs.
-    \item A temporary processing directory is created. The uploaded file is copied into this directory, and paths for the JSON output, ASCII tablature output, and processor log are prepared.
-    \item The backend invokes the Python command-line processor with the audio path, JSON output path, ASCII output path, and tuning parameter.
-    \item The Python processor loads the audio, runs note detection, generates playable string/fret assignments, exports JSON, and optionally writes an ASCII tablature preview.
-    \item The backend reads the generated JSON into a typed \texttt{GeneratedTabResult} record and creates a persisted tab using the tab service.
-    \item The original uploaded audio file is stored and its reference is inserted into the tab JSON payload.
-    \item The frontend navigates to the generated tab view, where the result can be rendered, played, favorited, and organized.
+    \item The user chooses from an audio file on the generation screen. The frontend is now accepting the user's instrument selection and title and sends the file to the backend generation endpoint.
+    \item The back-end checks to make sure the file has been uploaded, and that the extension and content type are allowed. It currently supports the input files: \texttt{.wav}, \texttt{.mp3} and \texttt{.mp4}.
+    \item A temporary processing directory is set up. The file uploaded is copied to this directory, and paths are created for the JSON output file, ASCII tablature output file, and processor log file.
+    \item The back-end passes the AudioPath and the JSON / ASCII output paths, along with the tuning parameter, to the Python command-line processor.
+    \item The Python processor loads up the audio, performs note detection and outputs playable string/fret assignments, exports JSON with the option to export an ASCII preview of the tab.
+    \item The backend deserializes the generated JSON into a typed \texttt{GeneratedTabResult} record, and uses the tab service to generate a persisted tab.
+    \item The original audio file is kept and added to the tab JSON payload.
+    \item The result is added to the generated tab view, and the frontend goes there for navigation, rendering, playing, favoriting and organizing this result.
 \end{enumerate}
 
 \subsection{Signal Processing Pipeline}
 
-The Python note detection pipeline transforms a raw waveform into a sequence of detected note events. It is implemented through \texttt{NoteDetectionPipeline}, \texttt{BassPluckDetector}, and \texttt{OnsetPitchEstimator}. The pipeline is intentionally separated from tab generation: it detects what appears to have been played, while the later tab generation stage decides where those notes should be played on the bass fretboard.
+The Python note detection pipeline converts a raw wave to a series of note events. It is realized by the classes \texttt{NoteDetectionPipeline} that is implemented by the class \texttt{BassPluckDetector} and by the class \texttt{OnsetPitchEstimator}. The pipeline is deliberately independent from tab generation, allowing it to determine whether what has been played has been heard, and the latter stage of tab generation to determine the location of those notes on the bass fretboard.
 
 \begin{algorithm}[H]
     \caption{Bass Note Detection Pipeline}
@@ -558,19 +545,18 @@ The Python note detection pipeline transforms a raw waveform into a sequence of 
     \end{algorithmic}
 \end{algorithm}
 
-The preprocessing stage first trims silence using an amplitude threshold and normalizes the remaining waveform. This reduces the effect of recording volume differences and helps the onset and pitch stages operate on a more consistent input range.
+In the preprocessing stage, silence is removed from the speech signal by applying an amplitude threshold and the signal is then normalized. This minimizes the impact of the volume difference to be captured and the effects of the onset and pitch stages on the captured input range.
 
-The onset stage is specialized for bass plucks. Rather than interpreting every small spectral fluctuation as a new note, the detector identifies candidate pluck positions that represent likely note attacks. These positions provide the temporal anchors for pitch estimation.
+The onset stage is dedicated to bass plucks. Instead of each of these small spectral fluctuations being a single note, the detector identifies candidate pluck positions which are likely note attacks. These are the time points in a track that are used to anchor pitch estimation.
 
-Pitch estimation is performed after each pluck candidate rather than exactly at the attack transient. This is important because the immediate attack of a bass note contains noise, string contact artifacts, and unstable harmonics. The \texttt{OnsetPitchEstimator} therefore reads pitch from a short window after the onset. It uses \texttt{librosa.pyin} with a bass-oriented frequency range from approximately 32 Hz to 220 Hz, corresponding to the practical low-register range of bass guitar notes. The estimator then clusters and stabilizes the resulting frequencies to reduce octave mistakes and harmonic misreadings.
+Pitch estimation is done not at the attack transient, but after each pluck candidate. This is useful because the initial assault on a bass note will contain noise, string contact artifacts, and unstable harmonics. The \texttt{OnsetPitchEstimator} is therefore used to read pitch from a short window following the onset. The frequency range is set to 32 Hz to 220 Hz, which is the typical low register range of bass guitar notes, with the use of librosa.pyin. The resulting frequencies are then clustered and stabilized by the estimator, to minimize octave errors and harmonics misreadings.
 
-Tempo is estimated from the spacing between detected onsets. The pipeline computes inter-onset intervals, uses the median spacing as a robust central value, and folds the resulting tempo into a preferred musical range. The output of this stage is a \texttt{DetectionResult} containing onset times, pitch values, note objects, tempo estimate, and pluck candidates.
+Tempo is estimated by measuring the interval between the onsets detected. It calculates inter-onset intervals, takes a median interval value as a strong central value and bends the resulting tempo into a favorite musical range. This stage outputs a \texttt{DetectionResult} object that includes onset time, pitch, note, tempo estimate, and detection of pluck candidates.
 
 \subsection{Fretboard and Playability Optimization}
+Pitch detection is not sufficient to create high quality tablature since tablature is a physical manifestation of music. On a bass guitar, there can be more than one string/fret combination to play the same pitch. TaBee implements a fretboard model and a dynamic programming optimizer to clear up this ambiguity.
 
-Pitch detection alone cannot produce high-quality tablature because tablature is a physical representation of music. On a bass guitar, one pitch may correspond to multiple possible string/fret positions. TaBee addresses this ambiguity using a fretboard model and a dynamic programming optimizer.
-
-The \texttt{BassFretboard} model supports standard four-string bass tuning \texttt{EADG} and five-string tuning \texttt{BEADG}. String numbers are represented from highest-pitched string to lowest-pitched string. For standard bass, string 1 corresponds to G2, string 2 to D2, string 3 to A1, and string 4 to E1. For each detected MIDI note, the fretboard model computes every playable candidate position up to the configured maximum fret.
+The \texttt{BassFretboard} model can be used for standard 4 string bass tuning \texttt{EADG}, 5 string bass tuning \texttt{BEADG}, dropped-C tuning \texttt{CGCF}, and half-step-down tuning \texttt{EBABDBGB}. Numbers are written from treble to bass strings on a string. The string and fret numbers are based on the selected tuning; for standard bass, 1 is G2, 2 is D2, 3 is A1, and 4 is E1. For every note picked up by the MIDI controller, the fretboard model calculates all possible positions that can be played on the fretboard up to the set maximum fret.
 
 \begin{table}[H]
     \centering
@@ -591,7 +577,7 @@ The \texttt{BassFretboard} model supports standard four-string bass tuning \text
     \label{tab:tabee_pitch_to_tab}
 \end{table}
 
-The optimizer is implemented by \texttt{PlayabilityOptimizer}. It uses a Viterbi-style dynamic programming approach. Each candidate position is treated as a possible state for a note, and transitions between consecutive notes are assigned movement costs. The algorithm evaluates the cumulative path cost and backtracks from the lowest-cost final state to recover the globally preferred fingering path.
+It is implemented by \texttt{PlayabilityOptimizer}. It is based on a dynamic programming technique similar to the Viterbi algorithm. The state of each candidate is considered as a possible state for a note, and the movement cost between two consecutive notes is assigned for each possible move. The algorithm calculates the path cost for all the states visited and backtracks through the path to find the path with the lowest cost and recover the cost preferred path globally.
 
 \begin{algorithm}[H]
     \caption{Playability-Based Fretboard Optimization}
@@ -612,11 +598,11 @@ The optimizer is implemented by \texttt{PlayabilityOptimizer}. It uses a Viterbi
     \end{algorithmic}
 \end{algorithm}
 
-The local cost function expresses preferences for individual positions. It includes a mild high-fret penalty, open-string handling, and a preference for practical low-position fingerings when appropriate. The transition cost function estimates movement between consecutive notes using fret distance, string distance, and hand-position shifts. Open strings and rests are treated specially because they can reduce or reset left-hand movement. This allows TaBee to avoid both extremes: it does not simply choose the lowest fret every time, and it does not greedily choose locally convenient positions that create awkward later jumps.
+Local cost function represents preferences for single positions. It features a moderate-high-fret penalty, open-string playing and a desire to use low position fingerings where they are convenient. The transition cost function is an estimation of the movement costs between two successive notes, based on fret distance, string distance and hand position change. Open strings and rests are treated specially as they can shorten or reset the LHS movement. This helps TaBee to not only move to the lowest fret each time, but also avoids picking locally convenient frets that would make awkward jumps later in the piece.
 
-If a note cannot be mapped to a playable position under the selected tuning, the fretboard model returns a rest-like placeholder. This allows the optimizer and exporter to continue processing the rest of the sequence instead of failing the entire transcription because of a single unplayable or uncertain detection.
+The model of fretboard will return a rest if a note cannot be mapped to a playable position under the selected tuning. This way, the optimizer and exporter can proceed with the rest of the sequence without stopping because one specific detection was not playable, but instead fail the entire file.
 
-Figure \ref{fig:tabee_fretboard_optimization} illustrates this idea with a simplified three-note phrase. The detected pitches A2, B2, and C3 can each be played at multiple positions on a standard bass fretboard. For example, A2 can be played on the G string at fret 2, on the D string at fret 7, or on the A string at fret 12. If the system selected each note independently, it could choose a position that is technically correct but awkward for the next transition. Instead, the optimizer evaluates the complete sequence of candidate positions and selects the path shown in bold. In this example, staying on the G string across frets 2, 4, and 5 produces a smooth low-cost movement path, so it is preferred over alternatives that require larger fret jumps or unnecessary string changes.
+This concept is shown in figure \ref{fig:tabee_fretboard_optimization} using a simplified 3-note phrase. Detected Pitches A2, B2 and C3 can be played on many positions on a standard bass fretboard. For instance, A2 may be used on fret 2, string G; fret 7, string D; or fret 12, string A. If the system were to pick every note up individually, then it would be able to pick a note that might be technically correct but awkward for the next transition. On the contrary, the optimizer analyzes the entire selection of the potential positions and picks the bolded sequence of positions. In this example, playing a G string throughout the 2nd, 4th and 5th frets is a low-cost movement path to play, rather than any options that would involve a higher fret jump or unnecessary string changes.
 
 \begin{figure}[H]
     \centering
@@ -634,12 +620,11 @@ Figure \ref{fig:tabee_fretboard_optimization} illustrates this idea with a simpl
 
 \subsection{Presentation, Playback, Export, and Product Screens}
 
-The frontend is designed to make the audio-to-tab pipeline usable as a complete product workflow rather than as a technical file conversion utility. The interface first guides the user through tab generation, then presents the generated score with playback and export controls, and finally gives the user dashboard, discovery, playlist, profile, and search pages for managing the generated content after creation.
+The front end is optimized for the use as a complete product workflow, not as a technical file conversion tool. It first helps the user to generate the tabs, followed by the user viewing the generated score with playback and export options, and finally provides the user with various pages for managing the generated content, after creation, namely pages to the dashboard, discovery, playlist, profile, and search.
 
 \subsubsection{Generation Interface}
 
-The generation page is the entry point of the transcription workflow. As shown in Figure \ref{fig:tabee_generate_page}, the user selects an audio file, enters the title of the tab, and chooses the instrument context before submitting the file. This screen also introduces the processing stages of the application, so the user understands that the uploaded audio will pass through upload validation, note detection, tab generation, and rendering stages before the final result appears.
-
+The generation page is the first page in the transcription workflow. When the user clicks on an audio file, he or she types in the name of the tab and specifies the instrument context prior to sending the file, as illustrated in Figure \ref{fig:tabee_generate_page}. This screen also sets the expectations for the processing of the application: when the user uploads audio, it will be subjected to the validation process, the detection of the notes, generation of the tabs, and the rendering process.
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.95\textwidth]{generaate.png}
@@ -649,7 +634,7 @@ The generation page is the entry point of the transcription workflow. As shown i
 
 \subsubsection{Tab Presentation, Playback, and Export}
 
-After the backend creates the tab, the frontend navigates to the tab viewer. Figure \ref{fig:tabee_tab_viewer} shows this presentation layer. The generated music is rendered with AlphaTab, which allows the application to display the result as readable tablature instead of raw JSON. The viewer also supports playback-oriented study features such as cursor tracking, speed control, looping, and synchronized audio playback. These features are important because the user can compare the generated tab with the original recording and practice difficult sections at a slower tempo. The export action extends the workflow outside the browser by allowing the rendered tab to be saved as a PDF.
+The backend generates the tab and the frontend redirects to the tab viewer. This presentation layer is displayed in figure \ref{fig:tabee_tab_viewer}. The output of the music is rendered with AlphaTab, with the possibility to display the result as music tab instead of raw JSON. The viewer also enables study capabilities related to playing the content, like cursor tracking, playback speed, looping, and audio synchronization. These features are necessary as the user can listen to the generated tab and compare it with the original recording, and can then rehearse difficult parts at a slower tempo. The export action is used to take the rendered tab out of the browser by saving it as a PDF.
 
 \begin{figure}[H]
     \centering
@@ -660,8 +645,7 @@ After the backend creates the tab, the frontend navigates to the tab viewer. Fig
 
 \subsubsection{Dashboard and Content Management}
 
-After tabs are created, users need a way to return to them, organize them, and continue working with them. The dashboard page, shown in Figure \ref{fig:tabee_dashboard_page}, acts as the user's main workspace after login. It brings recently generated tabs, personal playlists, and saved or favorited content into one place so that the user can continue working with previously generated material without returning to the upload flow.
-
+Once users have created tabs, they will need a way to get back to them, to sort them and to work with them. The user's primary workspace would be the dashboard page as depicted in Figure \ref{fig:tabee_dashboard_page} once he has logged in. It pulls recently generated tabs, personal playlists, saved and favorited content together, allowing the user to work with previously generated content without going back through the upload process.
 \FloatBarrier
 
 \begin{figure}[H]
@@ -673,7 +657,7 @@ After tabs are created, users need a way to return to them, organize them, and c
 
 \subsubsection{Discovery and Search}
 
-The discovery and search interfaces provide two different ways of finding content. The discovery page in Figure \ref{fig:tabee_discovery_page} represents the public browsing side of TaBee. It helps users encounter public tabs, playlists, and users without needing an exact query. In contrast, the search page in Figure \ref{fig:tabee_search_page} supports intentional navigation when the user already knows the title, username, or collection they are looking for.
+There are two different ways of finding content in the discovery and search interfaces. The discovery page, as shown in figure \ref{fig:tabee_discovery_page} is the public facing part of TaBee. It enables users to find public tabs, playlists and users without having to enter a specific query. The search page in figure \ref{fig:tabee_search_page} allows for intentional navigation if the user has already selected the title, username or collection they wish to search for.
 
 \begin{figure}[H]
     \centering
@@ -691,7 +675,7 @@ The discovery and search interfaces provide two different ways of finding conten
 
 \subsubsection{Playlists and Profiles}
 
-Figure \ref{fig:tabee_playlist_page} shows the playlist detail page. This page is where users organize generated tabs into meaningful collections, such as rehearsal sets, learning lists, or song groups. It also demonstrates that playlists are not only storage units but part of the organizational layer of the application.
+The detail page for a playlist is depicted in figure \ref{fig:tabee_playlist_page}. When users create tabs, they are organized into collections here, where they can gather them together into a meaningful group, for example, rehearsal sets, learning lists, or song groups. It also proves that playlists are not just storage but are also an organizational level of the application.
 
 \begin{figure}[H]
     \centering
@@ -700,7 +684,7 @@ Figure \ref{fig:tabee_playlist_page} shows the playlist detail page. This page i
     \label{fig:tabee_playlist_page}
 \end{figure}
 
-The user's own profile page, shown in Figure \ref{fig:tabee_my_profile_page}, summarizes the user's created playlists, saved playlists, created tabs, and favorited tabs. This view gives the user a personal management surface for both content ownership and content collected from other users.
+Figure \ref{fig:tabee_my_profile_page} summarizes the user's playlists created, playlists saved, tabs created, and favorited tabs. This perspective provides the user with an individual content management interface for their own content as well as other user's content.
 
 \begin{figure}[H]
     \centering
@@ -709,7 +693,7 @@ The user's own profile page, shown in Figure \ref{fig:tabee_my_profile_page}, su
     \label{fig:tabee_my_profile_page}
 \end{figure}
 
-Figure \ref{fig:tabee_public_profile_page} shows how another user's public profile appears. Public profiles make generated tabs and playlists visible outside the creator's private dashboard and support the follow-based collaboration model used by musicians who want to keep track of each other's material.
+Another user's public profile looks like this (see figure \ref{fig:tabee_public_profile_page}). Generated tabs and playlists are accessible to the public by public profiles, and can be used in conjunction with the follow model for collaboration amongst musicians who wish to keep track of each other's music.
 
 \begin{figure}[H]
     \centering
@@ -724,43 +708,42 @@ Figure \ref{fig:tabee_public_profile_page} shows how another user's public profi
 
 \subsubsection{Generated Tabs as Social Objects}
 
-One of the important differences between the initial prototype and the final implementation is the addition of a social interaction layer. In the interim stage, the project mainly focused on generating tablature from audio. In the final stage, generated tabs are integrated into a user-centered ecosystem. Each tab is associated with its creator, can be shown on the creator's profile, can be discovered by other users, and can be favorited. This makes the generated output persistent and socially visible rather than a temporary file produced by a one-time conversion process. The tab viewer in Figure \ref{fig:tabee_tab_viewer}, the discovery page in Figure \ref{fig:tabee_discovery_page}, and the profile pages in Figures \ref{fig:tabee_my_profile_page} and \ref{fig:tabee_public_profile_page} together show how a generated tab moves from private output to reusable public content.
+One of the important differences between the initial prototype and the final implementation is the addition of a social interaction layer. During this step the project primarily concentrated on audio to tablature generation. In the last step, the generated tabs are embedded in a user-centric ecosystem. Each tab is associated with its creator, can be shown on the creator's profile, can be discovered by other users, and can be favorited. This results in the created output being persistent and socially visible, as opposed to being created by a one-time conversion process. The tab viewer in Figure \ref{fig:tabee_tab_viewer} and the discovery page in Figure \ref{fig:tabee_discovery_page} and the profile pages in Figures \ref{fig:tabee_my_profile_page} and \ref{fig:tabee_public_profile_page} all illustrate how a generated tab transitions from private output to usable public output.
 
 \subsubsection{Playlist-Based Organization}
 
-The playlist feature is especially important for musicians. A user may create a playlist for a rehearsal set, a practice routine, a specific music group, or a collection of bass lines from different songs. Since playlists can contain public tabs created by other users, the system supports musical reuse without violating ownership. The creator of a tab remains the owner of that tab, while other users can collect it in their own playlists. This mirrors how musicians often work in practice: a player may learn from another person's transcription, save it for later, or organize it together with other songs. The playlist page in Figure \ref{fig:tabee_playlist_page} is therefore part of the collaboration model, not only a storage screen.
+Musicians will find the playlist feature a feature that is extremely important. A user can create a playlist of any rehearsal set, practice session, music group or group of bass lines from different songs. Playlists can include public tabs that other users have created, thus allowing musical reuse without infringing upon ownership. The creator of a tab will always own it and other users can always get it in their own playlists. In much the same way as musicians practice: a player can get a transcription from a fellow player and save it for later, or arrange it along with other music. The playlist page, in Figure \ref{fig:tabee_playlist_page} is thus no longer just a storage screen, but a part of the collaboration model.
 
 \subsubsection{Following, Discovery, and Collaboration}
 
-Following other users adds another layer of social connection. In a music group, band members can follow each other and keep track of newly generated tabs or playlists. For example, a bass player can generate a tab for a rehearsal song, add it to a playlist, and other members can find the content through the user's profile, discovery flow, or search page. Although TaBee is not designed as a full social media application, this follow/favorite/playlist structure creates a focused music-oriented collaboration model. This keeps the report's social explanation connected to the product screens without repeating the same screenshots.
+Other users can be followed to create more social links. In a music group, the band members can follow one another and track new tabs or playlists that they've created. For instance, a bass player can create a tab for a song that is rehearsing, save it to their playlist, and another player can access that material through the user's profile, discovery flow or search page. TaBee doesn't really aim to be a comprehensive social media platform, but this follower-favorite / playlist system produces a music-centric way of collaborating. This ensures that the social explanation is related to product screens without being redundant.
 
 \subsection{Software Design Patterns and Principles}
 
-The implementation uses several software design principles that support maintainability, testability, and future extension.
+Several software design principles are used to ensure maintainability, testability and future extensibility.
 
 \begin{itemize}
-    \item \textbf{Feature-Based Modularization:} Backend code is organized around product capabilities such as tabs, users, playlists, authentication, and media rather than a single global controller/service/repository hierarchy.
-    \item \textbf{Repository Pattern:} Spring Data JPA repositories abstract database access and keep persistence details out of web controllers.
-    \item \textbf{Service Layer Pattern:} Services contain application behavior such as tab creation, update validation, ownership checks, playlist operations, and audio processing orchestration.
-    \item \textbf{DTO Boundary Pattern:} Request and response DTOs define stable API contracts and prevent persistence entities from leaking directly to clients.
-    \item \textbf{Ports and Adapters in the Python Core:} Interfaces such as \texttt{AudioReader}, \texttt{PitchEstimator}, \texttt{Fretboard}, and \texttt{TabOptimizer} decouple pipeline orchestration from concrete DSP and optimization implementations.
-    \item \textbf{Strategy-Like Optimization Abstraction:} The \texttt{TabOptimizer} port makes the playability optimizer replaceable. Future algorithms, such as learned fingering models or instrument-specific heuristics, could be introduced behind the same interface.
-    \item \textbf{Process Isolation:} The Java backend invokes the Python processor as an external command with a timeout and log capture. This isolates heavy audio dependencies from the web runtime and provides a clear operational boundary for failures.
-    \item \textbf{Security and Ownership Checks:} Authenticated endpoints require the current user, and tab/playlist operations are routed through services that enforce ownership and visibility rules.
-    \item \textbf{Testability:} The separation of controllers, services, repositories, DTOs, and Python ports allows unit tests to target individual behaviors without exercising the complete stack.
+    \item \textbf{Feature-Based Modularization:} There is no one single hierarchy in the backend code but multiple hierarchies based on the functionality on each feature — tabs, users, playlists, authentication, and media.
+    \item \textbf{Repository Pattern:} Spring Data JPA repositories provide abstraction to access a database and separate persistence information from web controllers.
+    \item \textbf{Service Layer Pattern:} The services implement application behaviour like creating tabs, updating tab validation, ownership checking, playlist operations, audio processing orchestration, etc. - this is known as Service Layer Pattern.
+    \item \textbf{DTO Boundary Pattern:} Using DTOs for Request and Response to create stable API contracts and to avoid direct persistence entities reaching clients.
+    \item \textbf{Ports and Adapters in the Python Core:} Interfaces like \texttt{AudioReader}, \texttt{PitchEstimator}, \texttt{Fretboard} and \texttt{TabOptimizer} separate the orchestration of the pipeline from the concrete DSP and optimization implementations.
+    \item \textbf{Strategy-Like Optimization Abstraction:} The playability optimizer is replaceable in the \texttt{TabOptimizer} port, which is referred to as Strategy-Like Optimization Abstraction. New algorithms, like instrument specific heuristics or learned fingering models, could be added into the same interface.
+    \item \textbf{Process Isolation:} The Java backend calls the Python processor as an external process, as a timeout and log capture. This separates, from the rest of the web runtime, the heavy audio dependencies and sets them up as a definite failure boundary.
+    \item \textbf{Security and Ownership Checks:} The operations of tabs/playlists are directed to services that impose ownership and visibility constraints, and authenticated endpoints require the current user.
+    \item \textbf{Testability:} Separating the controllers, services, repositories, DTOs, and Python ports enables unit tests to focus on individual behaviors rather than the whole stack.
 \end{itemize}
 
 \newpage
 \section{Experimentation Environment and Experiment Design}
 \label{sec:experiments}
 
-The TaBee project contains two different evaluation targets. The first target is the musical correctness of the audio-to-tab pipeline: the system should detect bass note events and map them to playable string/fret positions. The second target is software reliability: the web application should validate input safely, preserve user data correctly, render generated tabs in the browser, and keep common backend operations within acceptable performance bounds.
+There are two evaluation targets at the TaBee project. The first objective is to get the music correct along the audio-to-tab pipeline: the system should be able to identify bass note events and correlate them with playable string/fret locations. The second one is software reliability: web application should check the input safely and correctly, ensure that the user data is preserved properly, render generated tabs in the browser, and not let backend operations exceed acceptable performance limits.
 
-For this reason, the experimentation design separates algorithmic evaluation from software verification. Algorithmic experiments focus on onset detection, pitch estimation, tempo estimation, and fretboard assignment. Software experiments focus on automated backend tests, frontend production builds, security-related validation, media handling, JSON serialization, and manual end-to-end user flows.
-
+The experimentation design has a separation between algorithmic evaluation and software verification because of this. The areas of algorithmic experiments include onset detection, pitch estimation, tempo estimation, and fretboard assignment. Software experiments are dedicated toward automated back end tests, end to end production build, security related validation, media handling, JSON serialization and manual end to end user flows.
 \subsection{Development and Production Environment}
 
-The implementation was developed and tested primarily on Windows 11 workstations. The backend test report was produced using Java 17, Maven Surefire, and JUnit 5. The frontend was validated using the TypeScript compiler and Vite production build. The Python transcription core uses \texttt{librosa} and \texttt{numpy}, which makes the audio processing layer independent of the Java runtime.
+The implementation was crafted and tested mainly on Windows 11 workstations. The test report generated for the back end was created with Java 17, Maven Surefire and JUnit 5. The frontend was checked with the TypeScript compiler and the production build with Vite. The audio processing layer is independent of the Java runtime, using the following Python libraries: \texttt{librosa} and \texttt{numpy}.
 
 \begin{table}[H]
     \centering
@@ -787,15 +770,15 @@ The implementation was developed and tested primarily on Windows 11 workstations
 
 The software stack is divided intentionally:
 \begin{itemize}
-    \item \textbf{Backend Validation Environment:} Backend correctness is checked with \texttt{mvn test}. These tests avoid depending on a live external database so that local regression checks remain repeatable.
-    \item \textbf{Frontend Validation Environment:} Frontend correctness is checked with \texttt{npm run build}, which runs TypeScript compilation and Vite bundling.
-    \item \textbf{Audio Processing Environment:} The backend invokes the Python processor through a command-line boundary. The processor reads audio, generates JSON and ASCII tablature outputs, and returns control to the Java application through files.
-    \item \textbf{Manual System Environment:} Full user-flow tests require both applications to run simultaneously: the backend through \texttt{mvn spring-boot:run} and the frontend through \texttt{npm run dev}.
+    \item \textbf{Backend Validation Environment:}To  check for the correctness of the backend, use \texttt{mvn test} in the Backend Validation Environment. These tests do not rely on an external database for the live tests to ensure that these tests are repeatable locally.
+    \item \textbf{Frontend Validation Environment:}  Frontend correctness is validated by running \texttt{npm run build} that contains TypeScript compilation and Vite bundling.
+    \item \textbf{Audio Processing Environment:}     Audio Processing Environment: The back end calls the Python processor via command line boundary. The processor reads the audio, creates tab files (in the form of JSON and ASCII) and adds the control back to the Java application via files.
+    \item \textbf{Manual System Environment:} Full user-flow tests need both applications to be started at the same time: the Backend with \texttt{mvn spring-boot:run} and the Frontend with \texttt{npm run dev}.
 \end{itemize}
 
 \subsection{Dataset and Ground Truth Preparation}
 
-The algorithmic evaluation is designed around monophonic bass guitar recordings. Monophonic samples are appropriate for the current scope because the implemented pipeline estimates a single dominant bass pitch after each detected pluck candidate. The project repository contains local audio samples used during development, including short test recordings and a bass-only recording of a known bass line. These files are useful for smoke testing, qualitative inspection, and measuring whether the pipeline can complete on realistic audio input.
+The algorithmic evaluation is based on monophonic bass guitar recordings. For the current scope, monophonic samples are suitable since the pipeline estimates only one dominant bass pitch from each pluck candidate that is detected. The project repository includes local audio samples that were used during the development process, such as short recordings for testing purposes and a recording of a known bass line without any other sounds. These files work great for smoke testing, qualitative checks and to see if it can finish on a realistic audio input.
 
 \begin{table}[H]
     \centering
@@ -814,35 +797,49 @@ The algorithmic evaluation is designed around monophonic bass guitar recordings.
     \label{tab:tabee_dataset_categories}
 \end{table}
 
-For final quantitative evaluation, each selected sample should have a manually prepared ground-truth annotation. The annotation should include note onset time, expected pitch or MIDI note, and expected string/fret position. Since manually choosing tablature can be subjective, especially when multiple fingerings are musically acceptable, the ground truth should allow two levels of correctness:
+Each selected sample should also have a manual ground-truth annotation to make the final quantitative evaluation. The annotation should contain note onset time, expected pitch or midi note and expected string/fret position. It is important to note that there can be many correct answers to the question of what should be played in a particular tablature, and that the ground truth should be set up to allow two types of correctness:
 
 \begin{enumerate}
-    \item \textbf{Pitch-Level Correctness:} The detected pitch matches the target note within an acceptable tolerance.
-    \item \textbf{Tab-Level Correctness:} The selected string/fret position either exactly matches the reference fingering or belongs to an accepted equivalent set.
+    \item \textbf{Pitch-Level Correctness:} The detected pitch is within some tolerance of the target note.
+    \item \textbf{Tab-Level Correctness:} Selected string/fret position is either the same as reference string/fret position or a recognized equivalent set of positions.
 \end{enumerate}
 
-\begin{figure}[H]
+\begin{table}[H]
     \centering
-    \fbox{
-        \begin{minipage}[c][5cm][c]{0.9\textwidth}
-            \centering
-            \textbf{TODO: Insert Dataset Summary Table or Screenshot}\\[0.5em]
-            Include final sample names, duration, tempo, number of annotated notes, and playing style.
-        \end{minipage}
-    }
+    \begin{tabular}{|p{0.18\textwidth}|p{0.2\textwidth}|p{0.13\textwidth}|p{0.16\textwidth}|p{0.13\textwidth}|p{0.12\textwidth}|}
+        \hline
+        \textbf{Evaluation Subject} & \textbf{Dataset Group} & \textbf{Duration} & \textbf{Tempo} & \textbf{Annotated Events} & \textbf{Playing Style} \\
+        \hline
+        Short Phrase Set A & Controlled alternate-tuning phrase dataset & 7.93 s & 81 BPM reference / 108 BPM estimated & 30 & Dropped-C monophonic phrase \\
+        \hline
+        Groove Stem Set A & Repeated-groove bass stem dataset & 220.04 s & 110 BPM estimated & 9 & Standard-tuning riff excerpt \\
+        \hline
+        Classic Rock Stem Set A & Classic-rock bass stem dataset & 260.39 s & 120 BPM estimated & 8 & Standard-tuning opening riff excerpt \\
+        \hline
+        Pop/Funk Stem Set A & Pop/funk bass stem dataset & 299.50 s & 117 BPM estimated & 8 & Standard-tuning syncopated groove excerpt \\
+        \hline
+        Odd-Meter Stem Set A & Progressive/odd-meter bass stem dataset & 381.78 s & 126 BPM estimated & 8 & Standard-tuning 7/4 riff excerpt \\
+        \hline
+        Funk/Soul Stem Set A & Five-string funk/soul bass stem dataset & 295.58 s & 103 BPM estimated & 8 & Low-register syncopated riff excerpt \\
+        \hline
+        Fast Rock Stem Set A & Half-step-down rock/punk bass stem dataset & 179.32 s & 99 BPM estimated & 8 & Repeated eighth-note riff excerpt \\
+        \hline
+    \end{tabular}
     \caption{Summary of the final audio evaluation dataset.}
-    \label{fig:tabee_dataset_summary}
-\end{figure}
+    \label{tab:tabee_dataset_summary}
+\end{table}
+
+The final quantitative audio evaluation is organized as an expandable dataset rather than as isolated ad-hoc files. The current evaluated subset contains seven subject groups: a controlled alternate-tuning phrase group, a repeated-groove bass-stem group, a classic-rock bass-stem group, a pop/funk bass-stem group, a progressive odd-meter bass-stem group, a five-string funk/soul bass-stem group, and a half-step-down rock/punk bass-stem group. The short-phrase group validates the pipeline on a manually checked monophonic phrase in dropped-C tuning, represented in the implementation as \texttt{CGCF}. The bass-stem groups validate the same pipeline on longer recordings in standard, alternate, and extended-range tunings, with manually checked riff excerpts used for quantitative scoring. This dataset structure is intentionally designed to grow with additional short phrases, standard-tuning examples, alternate-tuning examples, extended-range examples, and songs from different genres and lengths. The present results should therefore be interpreted as the first measured subset of a broader evaluation dataset.
 
 \subsection{Experiment Design}
 
-The algorithmic experiment is divided into three stages so that errors can be attributed to the correct part of the pipeline.
+The algorithmic experiment is executed in three stages of the algorithm, to enable errors to be isolated to the appropriate step in the pipeline.
 
 \subsubsection{Onset and Pitch Detection Experiment}
 
-The first experiment evaluates whether the system identifies the correct note events from the audio signal. Detected onset times are matched against annotated onset times using a temporal tolerance window. A detected onset is counted as correct if it falls within the tolerance window of an unmatched ground-truth onset. Pitch correctness is then evaluated for matched onsets by comparing the detected MIDI note against the annotated MIDI note.
+The focus of the first experiment is to determine if the system is able to recognize the proper note events from the sound. The onset time detected is compared to the annotated onset time with a temporal tolerance window. A detected onset within the tolerance window of an unmatched ground truth onset is considered correct. Then it is determined if the pitch of the detected MIDI note is correct for the matched onset, by comparing the detected note with the annotated note.
 
-The primary metrics are precision, recall, and $F_1$ score:
+The key performance indicators are precision, recall, and $F_1$ score:
 
 \begin{equation}
 Precision = \frac{TP}{TP + FP}
@@ -856,22 +853,22 @@ Recall = \frac{TP}{TP + FN}
 F_1 = 2 \cdot \frac{Precision \cdot Recall}{Precision + Recall}
 \end{equation}
 
-In addition to these event-based measures, octave errors should be tracked separately. Bass transcription is especially vulnerable to octave mistakes because low-frequency fundamentals may be weaker than their harmonics. A separate octave-error count helps distinguish timing failures from frequency-estimation failures.
+These event-based measures should also be supplemented by a tracking of octave errors. A common problem with bass transcription is that low frequency fundamentals could be weaker than their harmonics, thus leading to mistakes in octave. A separate Octave-error count allows separation of timing errors from frequency estimation errors.
 
 \subsubsection{Fretboard Assignment Experiment}
 
-The second experiment evaluates the output of the playability optimizer. For every correctly detected pitch, the system generates candidate string/fret positions and selects an optimized path. The output can be evaluated using:
+In the second experiment, the output of the playability optimizer is being tested. Each time a pitch is correctly detected the system creates candidate string/fret positions, and chooses an optimized string/fret path. The output can be assessed with the following:
 
 \begin{itemize}
-    \item \textbf{Exact Assignment Accuracy:} Percentage of notes where the generated string and fret exactly match the reference annotation.
-    \item \textbf{Equivalent Assignment Accuracy:} Percentage of notes where the generated position is musically equivalent and accepted by the annotation set.
-    \item \textbf{Average Movement Cost:} Total optimizer cost divided by the number of transitions, used to compare alternative optimizer settings.
-    \item \textbf{Unplayable Note Rate:} Percentage of notes that cannot be mapped to a valid position under the selected tuning.
+    \item \textbf{Exact Assignment Accuracy:} Percentage of notes for which the resulting string and fret are the same fret as the reference string.
+    \item \textbf{Equivalent Assignment Accuracy:} Percentage of notes that are musically equivalent (and accepted by the annotation set) to the generated position.
+    \item \textbf{Average Movement Cost:} Cost of optimizer divided by number of transitions, to compare alternative optimizer settings.
+    \item \textbf{Unplayable Note Rate:} Percentage of notes that do not have a valid position when using the current tuning.
 \end{itemize}
 
 \subsubsection{End-to-End Processing Experiment}
 
-The third experiment evaluates the full upload-to-render path. In this experiment, an audio file is submitted through the frontend or backend endpoint, processed by the Python core, stored by the backend, and rendered by the frontend. This test confirms that valid audio does not merely work in the isolated Python script but also works through the actual product workflow.
+In the third experiment, the entire upload-to-render process is tested. This experiment is the same but it uses an audio file that is submitted to the frontend or backend endpoint, which is processed by the Python core, stored by the backend and rendered by the frontend. This test ensures that valid audio doesn't just work in the Python script but also in the actual product workflow.
 
 \begin{table}[H]
     \centering
@@ -894,7 +891,7 @@ The third experiment evaluates the full upload-to-render path. In this experimen
 
 \subsection{Testing Methodology and Metrics}
 
-TaBee's software verification strategy combines automated regression tests, frontend build checks, performance microbenchmarks, security-oriented validation tests, and manual system tests. The current automated backend test suite contains 29 tests, all passing in the latest recorded run.
+The software verification strategy which TaBee will follow includes automated regression tests, frontend build checks, performance micro benchmarks, security related validation tests, and manual system checks. There are 29 tests in the current automated backend test suite; all of them passed in the most recent run that was recorded.
 
 \begin{table}[H]
     \centering
@@ -915,15 +912,15 @@ TaBee's software verification strategy combines automated regression tests, fron
 
 \subsubsection{Automated Backend Tests}
 
-The backend tests focus on isolated behaviors that should remain stable regardless of deployment environment. Password validation tests verify that weak passwords, repeated characters, username-containing passwords, email-token-containing passwords, and common sequences are rejected. Media storage tests verify that only supported image types are accepted and that path traversal attempts are blocked. Audio upload validation tests verify that unsupported extensions and unsafe content types are rejected before the Python processor starts. Token service tests verify that generated tokens are unique and that unknown tokens do not authenticate users. DTO mapping tests verify that user and tab responses expose the correct fields without leaking private data.
+The back end tests are devoted to any behaviors that should not change with deployment. Password validation checks ensure that a password rejected if it's a weak password, has been used before, contains characters from the username, contains characters from the email token, or common sequence. Media storage test ensures that the only image types accepted are those that are supported and that path traversal is prevented. Before the Python processor starts running, audio upload validation tests ensure that forbidden extensions are disallowed, as are other unsupported content types. Token service tests ensure that tokens generated are unique and that tokens that are not known are not used to authenticate a user. DTO mapping tests ensure that the right fields are returned when a user responds to the request and that no private data is exposed when a user responds to a tab request.
 
 \subsubsection{Frontend Build Verification}
 
-The frontend is checked through a production build. This validates the TypeScript type graph, route/component imports, and Vite bundling process. The latest recorded build passed successfully. The build report also notes a large JavaScript bundle warning, which does not fail the build but indicates that future code splitting may improve loading performance.
+A production build is used for the frontend check. This validates the type graph, route/component imports and Vite bundling process. The most recent build that was recorded was successful. Also in the build report is a large JS bundle warning, which isn't actually an error, but is a sign that the code splitting feature will yield better loading performance in the future.
 
 \subsubsection{Performance Measurements}
 
-Performance measurements are generated by \texttt{PerformanceStatisticsTest}. These tests are not intended to replace full load testing; instead, they provide repeatable local statistics for operations that are relevant to the backend's responsiveness and memory behavior.
+\texttt{PerformanceStatisticsTest} produces performance measurements. These tests are not meant to be a replacement for full load testing, but rather local repeatable statistics that are relevant to the behavior of operations in terms of responsiveness and memory usage of the back end.
 
 \begin{table}[H]
     \centering
@@ -946,45 +943,45 @@ Performance measurements are generated by \texttt{PerformanceStatisticsTest}. Th
 
 \subsubsection{Manual End-to-End System Tests}
 
-Manual system tests validate workflows that span multiple components and cannot be fully represented by isolated unit tests. The recommended system test sequence is:
+Manual system tests validate workflows which involve multiple components, and which cannot be completely captured by independent unit tests. The recommended sequence of system tests is:
 
 \begin{enumerate}
-    \item Start the backend with \texttt{mvn spring-boot:run}.
-    \item Start the frontend with \texttt{npm run dev}.
-    \item Register a new user and complete email verification.
-    \item Log in and upload a profile image.
-    \item Upload a supported audio file and generate a tab.
-    \item Open the generated tab page and confirm that the tab renders.
-    \item Favorite a tab and verify that favorite state and count update.
-    \item Create a playlist, upload a cover image, and add/remove a tab.
-    \item Search users, tabs, and playlists.
+    \item Run the backend by using \texttt{mvn spring-boot:run}.
+    \item Run \texttt{npm run dev} to start the frontend.
+    \item Sign up new user and email verification.
+    \item Log in and upload an image to your profile.
+    \item Upload an audio file that's supported, and create a tab.
+    \item Open the resulting tab page and verify that the tab is displayed.
+    \item Favorite a tab and see if favorite state and favorite count update.
+    \item Make a Playlist, upload a cover image and add/remove a tab.
+    \item Search users, tabs and playlists.
     \item Open discovery and public profile pages.
 \end{enumerate}
 
-Expected outcomes include clear user-facing error messages, correct persistence of created resources, correct access-control behavior, and stable rendering without confusing stale UI states.
+The results that are expected are error messages that are easy for users to comprehend, proper persistence of created resources, proper access control behavior, and stable rendering without confusing stale UI states.
 
 \subsection{Threats to Validity}
 
-Several limitations must be considered when interpreting the evaluation:
+The interpretation of the evaluation needs to take into account several limitations:
 
 \begin{itemize}
-    \item \textbf{Dataset Size:} The current evaluation plan depends on a limited collection of monophonic bass recordings. A larger and more diverse dataset would be needed for strong generalization claims.
-    \item \textbf{Ground-Truth Subjectivity:} Multiple string/fret assignments can be musically valid for the same pitch sequence. This is why equivalent accepted fingerings should be considered in addition to exact matches.
-    \item \textbf{Polyphonic and Mixed Audio:} The current pipeline is designed primarily for monophonic bass input. Results on full-band mixes or chordal/polyphonic recordings should not be interpreted as the main supported use case.
-    \item \textbf{Local Performance Scope:} The current performance measurements are local microbenchmarks. They demonstrate that selected operations are lightweight, but they do not replace production-scale concurrent load testing.
-    \item \textbf{External Service Availability:} Full integration behavior can depend on database and mail configuration. Automated tests intentionally avoid requiring live external services so local regression checks remain stable.
+    \item The existing assessment programme is based on a small number of monophonic bass recordings. More data and more diversity would be required for making definite generalization statements.
+    \item There may be more than one string/fret assignment that is musically correct for the same pitch sequence. Therefore, in addition to the exact matches, there should be also equivalent accepted fingerings.
+    \item The existing pipeline mostly supports mono bass input.The existing pipeline is geared mostly towards mono bass input. Recordings of full-band mixes or chordal/polyphonic music are not the primary use case and should not be seen as such.
+    \item Local Performance Scope: Now the performance measurements are local micro benchmarks. They prove selected operations are light weight, but do not stand in for production-scale concurrent load testing.
+    \item Database and mail configuration will affect full integration behaviour - External Service Availability. Automated tests explicitly do not need to use external services, which ensures that the local regression tests will not change.
 \end{itemize}
+
 \newpage
 \section{Comparative Evaluation and Discussion}
 \label{sec:evaluation}
 
-This section evaluates TaBee from two complementary perspectives. The first perspective is algorithmic: whether the system's transcription pipeline produces musically meaningful note events and playable bass tablature. The second perspective is software-oriented: whether the implemented platform behaves reliably as a full-stack application with authentication, upload validation, persistence, rendering, playlists, and social interaction features.
+TaBee will be assessed in this section in two complementary ways. The first is algorithmic: if the system's transcription pipeline generates musically-senseful note events and playable bass tab. The second approach is software centric: Does the platform work as a complete application and does it offer features such as social interactions, playlists, rendering, upload validation, and authentication.
 
-Unlike generic pitch-detection tools, TaBee's evaluation must consider the physical instrument model. A result can be pitch-correct but still weak as tablature if the selected string/fret positions are awkward or inconsistent. Therefore, the discussion below separates onset and pitch detection, fretboard assignment, end-to-end product behavior, and comparison against alternative solution categories.
-
+Traditional pitch-detection programs are different from TaBee because they are not considering the physical instrument model. If an awkward or inconsistent combination of string/fret positions is used, a result may sound pitch-correct and weak as tablature. As such the discussion below is divided into the topics of onset and pitch detection, fretboard assignment, end to end product behavior and comparison to other solution categories.
 \subsection{Algorithmic Evaluation}
 
-The algorithmic evaluation is organized around the three stages described in Section \ref{sec:experiments}: onset and pitch detection, fretboard assignment, and end-to-end processing. The final quantitative values should be filled after the manually annotated dataset is completed.
+The algorithmic evaluation is based on the three steps described in Section \ref{sec:experiments}: onset and pitch detection, fretboard assignment and end-to-end processing. The final measured run used the manually checked dataset subjects summarized in Table \ref{tab:tabee_dataset_summary}.
 
 \begin{table}[H]
     \centering
@@ -992,24 +989,32 @@ The algorithmic evaluation is organized around the three stages described in Sec
         \hline
         \textbf{Dataset Group} & \textbf{Onset Precision} & \textbf{Onset Recall} & \textbf{Pitch Accuracy} & \textbf{Octave Errors} \\
         \hline
-        Isolated notes & TODO & TODO & TODO & TODO \\
+        Controlled alternate-tuning phrases & 100.0\% & 100.0\% & 100.0\% & 0 \\
         \hline
-        Short bass phrases & TODO & TODO & TODO & TODO \\
+        Repeated-groove bass stems & 100.0\% & 100.0\% & 77.8\% & 1 \\
         \hline
-        Bass-only song excerpts & TODO & TODO & TODO & TODO \\
+        Classic-rock bass stems & 100.0\% & 100.0\% & 75.0\% & 0 \\
+        \hline
+        Pop/funk bass stems & 100.0\% & 100.0\% & 50.0\% & 0 \\
+        \hline
+        Odd-meter bass stems & 100.0\% & 87.5\% & 57.1\% & 0 \\
+        \hline
+        Five-string funk/soul bass stems & 100.0\% & 100.0\% & 100.0\% & 0 \\
+        \hline
+        Half-step-down rock/punk bass stems & 87.5\% & 87.5\% & 75.0\% & 0 \\
         \hline
     \end{tabular}
-    \caption{Planned quantitative results for onset and pitch detection.}
+    \caption{Quantitative results for onset and pitch detection on the evaluated excerpts.}
     \label{tab:tabee_onset_pitch_results}
 \end{table}
 
-The expected strength of the current pipeline is controlled monophonic bass input. This follows directly from the implemented design: the onset detector identifies candidate plucks, and the pYIN-based estimator reads a dominant pitch from a short stable window after each attack. This approach is well matched to isolated bass lines because the plucked note has a clear temporal attack and a sustained pitch region. It is less suitable for dense polyphonic recordings or full-band mixes, where the bass fundamental can be masked by other instruments.
+The controlled short-phrase subject contained 30 annotated note events. TaBee detected 30 note events, and each detected onset matched the corresponding annotated onset within the selected tolerance window. The pitch labels also matched the reference notes for this subject after running the processor with the correct dropped-C tuning option. The repeated-groove bass-stem subject was processed as a full 220.04 second track, producing 356 detected notes and 350 playable notes. For quantitative scoring, a representative riff excerpt from this subject was manually checked against the reference tab. Its onsets matched the reference events, while two pitch-level errors were observed: one octave error and one event without a stable pitch assignment. The classic-rock bass-stem subject was processed as a full 260.39 second track, producing 303 detected notes and 296 playable notes. A manually checked opening-riff excerpt contained 8 annotated pitch anchors. The repeated onset structure was matched, and six of the eight pitch anchors matched the reference; the remaining differences came from slide and upper-register articulations that were simplified in the generated event sequence. The pop/funk bass-stem subject was processed as a full 299.50 second track, producing 172 detected notes, all of which were playable. A representative syncopated groove excerpt contained 8 annotated events. All onsets were detected, but four of the eight matched events had the expected pitch label; the remaining errors came mainly from E passing tones that were detected as neighboring C-sharp notes. The odd-meter bass-stem subject was processed as a full 381.78 second track, producing 363 detected notes, all of which were playable. Its 7/4 main-riff excerpt contained 8 annotated events; seven onsets were detected, and four of those matched the expected pitch label. The remaining errors were neighboring or skipped riff tones in the repeated 7/4 pattern. The five-string funk/soul bass-stem subject was processed as a full 295.58 second track using \texttt{BEADG} tuning, producing 928 detected notes and 889 playable notes. Its evaluated low-register riff excerpt contained 8 annotated events from the five-string reference tab, and the detected onsets, pitch labels, and B-string fret positions matched the reference pattern. The half-step-down rock/punk bass-stem subject was processed as a full 179.32 second track using \texttt{EBABDBGB} tuning, producing 492 detected notes and 472 playable notes. The evaluated repeated eighth-note excerpt contained 8 annotated events; seven onsets were matched and six matched the expected pitch labels.
 
-The main failure modes expected in the pitch stage are missed onsets, false pluck detections, and octave errors. Octave errors are particularly important for bass guitar because higher harmonics can be stronger than the fundamental frequency in some recordings. For this reason, octave-error counts should be discussed separately from ordinary pitch mistakes when the final dataset results are inserted.
+Missed onsets, false detection of plucks and octave errors are the most probable failure modes in the pitch stage. It is especially significant with the bass guitar since in certain recordings the higher harmonics may be of higher amplitude than the fundamental frequency, causing octave errors. Because of this, octave-error counts should be reported separately from the ordinary pitch errors in the final data-set results, while inserting these results.
 
 \subsection{Fretboard Assignment Evaluation}
 
-The fretboard assignment stage is TaBee's main domain-specific contribution. A generic transcription system may output note names or MIDI pitches, but bass tablature requires a physical mapping to strings and frets. TaBee models this as a sequence optimization problem and uses a Viterbi-style dynamic programming algorithm to choose a low-cost path across candidate positions.
+TaBee's core domain specific feature is the fretboarding assignment stage. A generic transcription system can generate note names or pitch information in the form of MIDI, but bass tablature needs a string/fret mapping. TaBee learns to solve this as a sequence optimization problem, and implements a Viterbi style dynamic programming algorithm to select a low-cost sequence through the set of candidate positions.
 
 \begin{table}[H]
     \centering
@@ -1017,24 +1022,34 @@ The fretboard assignment stage is TaBee's main domain-specific contribution. A g
         \hline
         \textbf{Dataset Group} & \textbf{Exact Assignment Accuracy} & \textbf{Equivalent Assignment Accuracy} & \textbf{Unplayable Note Rate} \\
         \hline
-        Isolated notes & TODO & TODO & TODO \\
+        Controlled alternate-tuning phrases & 100.0\% & 100.0\% & 0.0\% \\
         \hline
-        Short bass phrases & TODO & TODO & TODO \\
+        Repeated-groove bass stems & 77.8\% & 77.8\% & 11.1\% \\
         \hline
-        Bass-only song excerpts & TODO & TODO & TODO \\
+        Classic-rock bass stems & 62.5\% & 75.0\% & 0.0\% \\
+        \hline
+        Pop/funk bass stems & 50.0\% & 50.0\% & 0.0\% \\
+        \hline
+        Odd-meter bass stems & 57.1\% & 57.1\% & 0.0\% \\
+        \hline
+        Five-string funk/soul bass stems & 100.0\% & 100.0\% & 4.2\% \\
+        \hline
+        Half-step-down rock/punk bass stems & 75.0\% & 75.0\% & 4.1\% \\
         \hline
     \end{tabular}
-    \caption{Planned quantitative results for string/fret assignment.}
+    \caption{Quantitative results for string/fret assignment on the evaluated excerpts.}
     \label{tab:tabee_fretboard_results}
 \end{table}
 
-Even before final numeric evaluation, the design has a clear advantage over a purely greedy mapper. A greedy mapper can choose the locally lowest or nearest fret for each note, but it does not consider how that choice affects future movement. TaBee stores cumulative path costs and backpointers, so the selected fingering is optimized over the whole detected sequence. The complexity is $O(N \cdot S^2)$, where $N$ is the number of notes and $S$ is the number of candidates per note. Since a bass note usually has only a small number of valid string/fret candidates, this cost is appropriate for interactive file-based processing.
+The controlled short-phrase subject was evaluated using the \texttt{CGCF} dropped-C tuning because its reference tablature uses the string tuning C-G-C-F from lowest to highest. With the matching tuning selected, all generated string/fret assignments in the evaluated short-phrase subject were playable and matched the accepted reference positions. The repeated-groove, classic-rock, pop/funk, and odd-meter bass-stem subjects were evaluated in standard \texttt{EADG} tuning, the funk/soul subject was evaluated with \texttt{BEADG} because the supplied reference tab uses a low B string, and the rock/punk subject was evaluated with \texttt{EBABDBGB} because the supplied reference tab uses half-step-down tuning. Most generated positions matched the repeated-groove reference riff, but the octave error and one unplayable event reduced the exact and equivalent assignment scores for that dataset group. The classic-rock opening riff was playable, but several reference notes were written as slides or alternate upper-neck positions, so the exact string/fret score is lower than the pitch-level score. The pop/funk excerpt remained fully playable, but the missed passing tones reduced its exact and equivalent string/fret assignment accuracy. The odd-meter excerpt remained playable, but missed or skipped riff tones reduced its pitch and assignment accuracy. The five-string funk/soul excerpt matched the low-register reference riff after rerunning the processor with the matching extended-range tuning; the remaining unplayable rate is reported over the full processed track rather than the scored excerpt. The half-step-down rock/punk subject preserved most repeated-note events but included a small number of extra or shifted detections, which reduced the scored excerpt accuracy.
 
-The trade-off is that the current optimizer is heuristic rather than learned from human performance data. Its local and transition costs express reasonable playability assumptions, such as penalizing large fret jumps and string skips, but musical fingering can be style-dependent. A human player may intentionally choose a higher position for tone, timbre, muting, or preparation for a later phrase. Therefore, the exact-assignment metric should be interpreted carefully; equivalent playable assignments may be a fairer measure than strict equality.
+Before final numeric evaluation, it is obvious that the design has an edge over the purely greedy mapper. A greedy mapper can select the lowest fret or nearest fret for each note, without taking into account the repercussions on subsequent moves. TaBee maintains cumulative path costs and backpointers, therefore the chosen fingering is optimized throughout the whole sequence detected. The complexity is $O(N \cdot S^2)$, where $N$ is the number of notes, and $S$ is the number of candidates per note. This is an OK cost for an interactive file-based process, as a bass note typically has only a few possible string/fret combinations.
+
+The drawback is that the current optimizer is a heuristic as opposed to a learned one based on human performance data. Its local and transition costs reflect reasonable playability assumptions including a cost of making a large fret jump and a cost of skipping a string, but fingering the correct notes may vary by style. A player can choose to play a higher pitch for tone, timbre, muting or preparing for a subsequent phrase. It is worth noting, however, that the notion of equivalence in playable assignments is not as straightforward as exact equality and could be a more accurate measure than exact equality.
 
 \subsection{End-to-End Platform Evaluation}
 
-The final product workflow was evaluated through regression checks and manual system-test expectations. The automated backend suite contains 29 tests, all passing in the latest recorded run. The frontend production build also passed TypeScript compilation and Vite bundling. These results show that the platform's core non-audio behaviors are stable: password validation, image storage validation, audio upload validation, token lookup, DTO mapping, and serialization benchmarks all execute successfully.
+Regresions and manual system-test expectations were used to evaluate the final product workflow. There are 29 tests in the automated backend suite of which all passed in the latest run recorded. The production build of the frontend also compiled the TypeScript and bundled it with Vite. The following results indicate stability of the platform core non-audio features: password validation, image storage validation, audio upload validation, token lookup, DTO mapping and serialization benchmarks.
 
 \begin{table}[H]
     \centering
@@ -1050,18 +1065,18 @@ The final product workflow was evaluated through regression checks and manual sy
         \hline
         JSON serialization benchmark & PASS & Generated note records serialize well below the configured threshold. \\
         \hline
-        Manual full workflow & TODO & Register, login, upload audio, render tab, favorite, playlist, search, and discovery should be recorded before final submission. \\
+        Manual full workflow & Checklist prepared & Register, login, upload audio, render tab, favorite, playlist, search, and discovery are defined as the final manual validation sequence. \\
         \hline
     \end{tabular}
     \caption{Summary of platform-level evaluation results.}
     \label{tab:tabee_platform_results}
 \end{table}
 
-The software results are important because TaBee is not just an offline signal-processing script. The generated tab must survive the full product path: upload, validation, processing, persistence, API response mapping, frontend conversion to AlphaTex, AlphaTab rendering, playback, and user organization. The current tests provide good coverage of validation and data mapping boundaries, while the remaining gap is a documented manual or automated browser test of the complete user journey.
+As a result, the software is important, since TaBee isn't just a script for offline signal processing. This created tab should be preserved through the entire product lifecycle: upload, validation, processing, persistence, response mapping for API, alphaTex conversion for the frontend, alphaTab rendering, playback and user organization. The majority of the tests currently cover validation and data mapping limits, and the rest is a manually or automatically executed browser test of the full user path which is documented.
 
 \subsection{Comparison with Alternative Approaches}
 
-TaBee can be compared against four broad categories of solutions: manual transcription, generic pitch detection, commercial audio tools, and research-oriented tablature allocation algorithms.
+The pitch detection results of TaBee can be compared to four general classes of solutions: manual transcription, generic pitch detection, commercial pitch detection software, and research-based pitch allocation algorithms.
 
 \begin{table}[H]
     \centering
@@ -1084,69 +1099,66 @@ TaBee can be compared against four broad categories of solutions: manual transcr
     \label{tab:tabee_comparative_summary}
 \end{table}
 
-Compared with manual transcription, TaBee is not intended to replace expert musical judgment in every case. Instead, it provides a strong first draft that can reduce the effort required to create usable tablature. Compared with generic pitch detection, the key improvement is the physical instrument layer: TaBee produces fret and string assignments rather than only note names or frequencies. Compared with commercial tools, the main benefit is architectural transparency and extensibility. The system exposes a clear pipeline that can be modified, tested, and improved by future developers.
+TaBee is not meant to replace expert musical judgement in all instances, compared to manual transcription. Instead, it offers good first draft that can save a lot of work in making usable tablature. The most significant difference to generic pitch detection is the physical instrument layer: TaBee not only assigns note names or frequencies, but also fret and string assignments. The primary advantage over commercial tools is that of being transparent and extensible to the architecture. The system makes its pipeline visibly visible and is open for modification, testing and improvement by future developers.
 
 \subsection{Qualitative User Interface Evaluation}
 
-The frontend supports the full lifecycle around generated tabs. The generation screen provides a simple upload workflow and communicates the processing stages. The tab viewer renders the generated result through AlphaTab and supports playback-oriented study behavior such as speed control, looping, and PDF export. Dashboard, discovery, playlist, profile, and search pages make the generated content manageable after creation.
+The frontend can handle all aspects of generated tabs. The generation screen offers easy upload process and informs the user about the processing steps. The tab viewer displays the generated result using the AlphaTab application and provides playback oriented study behavior like speed control, looping and PDF export. The content created can be managed after it has been created, thanks to the dashboard, discovery, playlist, profile and search pages.
 
-\begin{figure}[H]
+\begin{table}[H]
     \centering
-    \fbox{
-        \begin{minipage}[c][5cm][c]{0.9\textwidth}
-            \centering
-            \textbf{TODO: Insert Evaluation Screenshot Group}\\[0.5em]
-            Suggested screenshots: generated tab result, playback controls, discovery page, playlist organization.
-        \end{minipage}
-    }
+    \begin{tabular}{|p{0.28\textwidth}|p{0.52\textwidth}|}
+        \hline
+        \textbf{Interface Area} & \textbf{Qualitative Evaluation Focus} \\
+        \hline
+        Generation page & Audio upload, instrument tuning selection, and processing feedback. \\
+        \hline
+        Tab viewer & Rendered tablature, playback controls, speed control, looping, and PDF export. \\
+        \hline
+        Dashboard and playlists & Organization of generated tabs into user-owned collections. \\
+        \hline
+        Discovery, profile, and search pages & Browsing public tabs, public user profiles, playlists, and search results. \\
+        \hline
+    \end{tabular}
     \caption{User-facing TaBee workflow used for qualitative evaluation.}
-    \label{fig:tabee_qualitative_workflow}
-\end{figure}
+    \label{tab:tabee_qualitative_workflow}
+\end{table}
 
-The main qualitative strength of the interface is that it connects a technical DSP pipeline to musician-facing actions. Users do not need to inspect raw JSON or run command-line scripts. They upload an audio file, receive a rendered tab, listen back to the associated audio, and organize the result inside the same application. This supports the project's broader goal: making automatic transcription useful as part of a real music-learning and sharing workflow.
+The biggest qualitative plus of the interface is that it bridges a technical approach to DSP pipeline with actions for the musicians. Users don't have to look at raw JSON or use command-line scripts. They upload an audio file, get a rendered tab, then listen to the audio file and arrange it within the application. This is in line with the project's ultimate objective: to enable automatic transcription to be a part of a practical music-learning and sharing process.
 
 \subsection{Discussion of Limitations}
 
-The evaluation also reveals several limitations. First, the current pipeline is scoped primarily to monophonic bass recordings. Full-band mixes, chords, slap artifacts, distortion, and noisy environments may reduce onset and pitch accuracy. Second, the current optimizer uses deterministic playability heuristics. These heuristics are explainable and efficient, but they do not capture all stylistic fingering choices. Third, the current automated test suite focuses mostly on backend validation, DTO mapping, security-sensitive file handling, and performance microbenchmarks. A stronger final evaluation should add repeatable browser-level system tests and quantitative audio accuracy results.
+There are also some weaknesses identified in the evaluation. For now, the line is geared towards mono bass recordings. Onset and pitch accuracy might be affected by full-band mixes, chords, slap artifacts, distortion or noisy environment. Second, current optimizer has deterministic playability heuristics. These are explainable and efficient but not all of the stylistic choices of fingering. Third, the current automated test suite is relatively focused on backend validation, dto mapping, security related file handling and performance microbenchmarks. The quantitative audio evaluation demonstrates the pipeline on the first seven manually checked subject groups in the evaluation dataset, but a larger annotated dataset and repeatable browser-level system tests would be needed for stronger generalization claims.
 
-Despite these limitations, the system demonstrates a complete engineering path from audio input to rendered tablature. The architecture is modular enough for future improvements: the pitch estimator, fretboard model, and optimizer are replaceable components, while the frontend and backend already provide the product infrastructure needed to expose improved transcription results to users.
-
+In spite of the above restrictions, the system shows it is possible to go from audio in to tab out. The architecture is modular and allows for future improvements: the pitch estimator, fretboard model and optimizer can be replaced with new modules, and the frontend and backend already contain the product infrastructure necessary to expose new transcription results to users.
 
 \section{Conclusion and Future Work}
 \label{sec:conclusion}
 
-This project presented TaBee, an end-to-end web platform for generating bass guitar tablature from uploaded audio recordings. The project began with a practical musical problem: manual transcription is time-consuming, and many existing tools either stop at pitch detection or provide closed, non-customizable workflows. TaBee addresses this gap by combining a bass-oriented audio analysis pipeline, a string/fret playability optimizer, and a full-stack application for storing, rendering, playing, organizing, and sharing generated tabs.
+The aim of this project was to create an end-to-end web-based application that generates bass guitar tabs from uploaded audio files. The project started with a real musical challenge: manual transcription is both time-consuming and many existing tools only stop at pitch detection or offer closed and non-customisable workflows. TaBee's aims to fill this void with a bass oriented audio analysis pipeline, string/fret playability optimizer, and full stack audio tab storage, rendering, playing, organising and sharing application.
 
-The completed system demonstrates that automatic transcription can be treated as a complete software engineering problem rather than only a signal-processing task. The Python core detects bass note events using onset candidates and pYIN-based pitch estimation, then converts detected pitches into playable tablature through a fretboard model and Viterbi-style dynamic programming optimizer. The Java Spring Boot backend validates uploads, invokes the processor through a controlled process boundary, persists generated tab data, stores audio references, and exposes REST APIs for user-facing features. The React frontend renders generated results through AlphaTab and supports product workflows such as tab viewing, playback, playlists, favorites, discovery, profiles, and search.
+The finished system is proof that automatic transcription is not just a signal processing problem, but one that can be viewed as a software engineering problem. The Python core is used to detect bass note events using onset candidates and pYIN-based pitch estimation and to transform the detected pitches into playable tablature using a fretboard model and Viterbi-style dynamic programming optimizer. The Java Spring Boot backend performs validation on the uploaded file, initiates the processor under a controlled process boundary, saves the generated tabs in the database, saves references to the audio content and provides REST APIs for the user-facing components. The React frontend utilizes AlphaTab to generate results and enable product features like tab viewing and playback, playlists, favorites, discovery, profiles, and search.
 
-From an architectural perspective, TaBee's main contribution is the integration of a domain-specific transcription core with a usable web platform. The modular structure keeps the audio processor, backend services, persistence model, and frontend renderer separated enough for independent testing and future improvement. The backend test report shows that the current automated suite passes 29 tests, covering password validation, media validation, audio upload validation, token behavior, DTO mapping, and selected performance measurements. These results support the reliability of the application layer, while the remaining final evaluation work is mainly concentrated around quantitative audio accuracy and documented end-to-end user-flow validation.
+From the architectural point of view, the most important feature of TaBee is its domain-specific transcription core and the usable web platform. As the audio processor, backend services, persistence model and frontend renderer are separate modules, they can be tested and improved independently of each other. The automated test suite as it is currently configured passes 29 tests as shown in the back end test report, including tests for password validation, media validation, audio upload validation, token behavior, DTO mapping and selected performance metrics. The results confirm the reliability of the application layer, while the short-phrase audio evaluation provides a measured validation of the transcription path under the selected dropped-C tuning.
 
-The project also shows the importance of bass-specific modeling. A detected pitch is not sufficient for tablature because the same pitch can appear in multiple fretboard locations. TaBee's playability optimizer explicitly addresses this ambiguity by selecting a coherent string/fret path across the detected note sequence. This makes the generated output more useful to bass players than a plain list of note names or frequencies.
+The project also demonstrates the significance of modeling specific to bass. As with tablature, if there is a detected pitch, it is not enough to write full tablature because if it is the same pitch could be at two fretboard positions. To remove this ambiguity, TaBee's playability optimizing algorithm chooses a consistent string/fret path through the detected note sequence. This makes the output from the code more useful to bass players than a list of note names or frequencies.
 
 \subsection{Future Work}
-Although TaBee implements the core audio-to-tab workflow and the surrounding product platform, several improvements would make the system more accurate, scalable, and useful for musicians.
+TaBee has the essential features of the audio-to-tab process and the overall product line, but a few enhancements would make the entire system more accurate, scalable, and appreciated by musicians.
 
 \begin{itemize}
-    \item \textbf{Larger Quantitative Evaluation:} The most immediate next step is to finalize a manually annotated dataset and fill the onset, pitch, and string/fret assignment result tables. This would make the algorithmic evaluation more rigorous and allow future versions of the pipeline to be compared objectively.
-    
-    \item \textbf{Improved Rhythm Quantization:} The current pipeline estimates note timing and tempo, but rhythm notation can be improved further. Future work can add beat-grid alignment, bar-aware grouping, rests, ties, and more accurate duration quantization before rendering.
-    
-    \item \textbf{User Correction Workflow:} Automatic transcription is rarely perfect. A practical next feature would allow users to edit incorrect notes, change string/fret assignments, adjust timing, and save corrected versions. These corrections could later become training or evaluation data.
-    
-    \item \textbf{Polyphonic and Mixed-Audio Support:} The current system is primarily designed for monophonic bass input. Future versions can explore source separation, bass stem extraction, and polyphonic transcription methods so that users can upload full-band recordings instead of isolated bass tracks.
-
-    \item \textbf{Expanded Instrument and Tuning Support:} The fretboard abstraction can be generalized to support six-string guitar, ukulele, alternate bass tunings, and extended-range basses. This would require instrument-specific tuning definitions, string ranges, and playability heuristics.
-
-    \item \textbf{Learned or Adaptive Fingering Models:} The current optimizer uses deterministic hand-movement heuristics. A future system could learn fingering preferences from expert transcriptions or adapt costs based on user preference, genre, or playing style.
-
-    \item \textbf{Background Job Processing:} The backend currently invokes the Python processor through a controlled external process. For larger files and concurrent usage, the system could move processing into a background job queue with progress reporting, cancellation, retry handling, and persistent job states.
-
-    \item \textbf{Browser-Level Regression Tests:} Automated end-to-end tests with a browser testing tool would strengthen confidence in the complete workflow from registration and upload to rendered tab playback and playlist organization.
-
-    \item \textbf{Performance and Scalability Evaluation:} Future work should measure processing time as a function of audio duration, concurrent upload behavior, database query latency, and frontend rendering time for long tabs.
+    \item The next step is to expand the manually annotated dataset beyond the current evaluated subject groups. Additional isolated-note samples, standard-tuning phrases, alternate-tuning phrases, and longer bass-only song excerpts from different genres would make the algorithmic evaluation more stringent and allow future versions of the pipeline to be evaluated objectively.
+    \item Note timing and tempo estimation is current, but rhythm notation can be further improved. What remains to be done is beat-grid alignment, bar-aware grouping, rests, more accurate duration quantization, etc. to render.
+    \item \textbf{User Correction Workflow:} Automatic transcription is not always accurate. One of the more useful features would be the ability to edit an erroneous note, alter string/fret positions, fine-tune timing, and restore saved versions. These corrections may be used for training and/or evaluation data at a later time.
+    \item The current system is mainly monophonic bass oriented. Future versions can incorporate source separation, bass stem extraction and polyphonic transcription methods, allowing users to upload full-band recordings rather than bass tracks only.
+    \item Expanded Instrument and Tuning Support: The fretboard abstraction can be extended to 6 string guitar, UKE, alternate bass tunings and extended range basses. That would be a tuning definition, string ranges and playability heuristics per instrument.
+    \item The current optimizer employs a set of hand-movement heuristics which are deterministic. One future system might be able to learn the preferred fingerings from transcriptions by the pros, or it could adjust the costs depending on the tastes, styles and/or preferences of the user.
+    \item The background job processing is currently handled by the background process running a controlled external python processor. If used by multiple users and/or large files, the system could be transformed to a background job queue, reporting progress, provide means to cancel a job, handle re-challenges, and persist job states.
+    \item End-to-end automated tests using a browser testing tool would add to the confidence of each step of the workflow from the registration and upload to the rendered tab playback and playlist organization.
+    \item Future work should implement a performance and scalability evaluation for processing time and upload concurrency, as well as for the latency of the queries to the audio database and for the latency of the rendering of long tabs on the frontend.
 \end{itemize}
 
-In summary, TaBee establishes a working foundation for bass-focused automatic tablature generation. Its current implementation combines DSP, playability optimization, web architecture, persistence, and user-facing workflows into a single system. With a larger annotated evaluation set, richer editing tools, and more advanced audio processing, TaBee can evolve from a graduation project prototype into a practical assistant for musicians who want to learn, preserve, and share bass lines more efficiently.
+To wrap up, TaBee provides a starting point for automated generation of bass tablature. At present, it is being used to integrate into a single system the following components: DSP, playability optimization, web architecture, persistence, and user-facing workflows. The increase in the number of annotated evaluation set, editing tools and more advanced audio processing makes it possible for TaBee to grow from a prototype graduation project to actually become an assistant for musicians who want to learn, preserve, and easily share bass lines.
 
 
 \newpage

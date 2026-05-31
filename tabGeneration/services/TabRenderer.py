@@ -22,14 +22,16 @@ class TabRenderer:
         *,
         notes_per_line: int = 16,
         string_numbers: Sequence[int] = (1, 2, 3, 4),
+        string_labels: dict[int, str] | None = None,
     ) -> str:
         if not assignments:
             return "No playable notes detected."
 
+        labels = string_labels or self._STRING_LABELS
         lines: list[str] = []
         for start in range(0, len(assignments), notes_per_line):
             chunk = assignments[start:start + notes_per_line]
-            lines.append(self._render_chunk(chunk, string_numbers=string_numbers))
+            lines.append(self._render_chunk(chunk, string_numbers=string_numbers, string_labels=labels))
         return "\n\n".join(lines)
 
     def _render_chunk(
@@ -37,6 +39,7 @@ class TabRenderer:
         assignments: Sequence[TabNoteAssignment],
         *,
         string_numbers: Sequence[int],
+        string_labels: dict[int, str],
     ) -> str:
         width = max(3, max(len(str(a.position.fret)) for a in assignments) + 1)
         rows = {string_number: [] for string_number in string_numbers}
@@ -57,5 +60,5 @@ class TabRenderer:
             "note " + " ".join(note_cells),
         ]
         for string_number in string_numbers:
-            rendered.append(f"{self._STRING_LABELS[string_number]}|   " + " ".join(rows[string_number]))
+            rendered.append(f"{string_labels[string_number]}|   " + " ".join(rows[string_number]))
         return "\n".join(rendered)

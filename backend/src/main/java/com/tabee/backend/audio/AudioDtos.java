@@ -20,7 +20,7 @@ public final class AudioDtos {
         @Schema(type = "string", format = "binary", description = "Audio file to upload")
         private MultipartFile file;
 
-        @Schema(description = "Bass tuning used by the tab generation pipeline", allowableValues = {"EADG", "BEADG"})
+        @Schema(description = "Bass tuning used by the tab generation pipeline", allowableValues = {"EADG", "BEADG", "CGCF", "EBABDBGB"})
         private String tuning = "EADG";
 
         public MultipartFile getFile() {
