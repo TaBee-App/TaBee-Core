@@ -1,5 +1,5 @@
 import { Pause, Play, Repeat, ScrollText } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { apiFetchBlob } from "../api/apiClient";
 
 interface PlayerBarProps {
@@ -12,6 +12,8 @@ interface PlayerBarProps {
   speed: number;
   audioUrl?: string;
   onTogglePlay: () => void;
+  onPlayingChange: (value: boolean) => void;
+  onTimeChange: (timeMs: number) => void;
   onLoopChange: (value: boolean) => void;
   onAutoScrollChange: (value: boolean) => void;
   onSpeedChange: (value: number) => void;
@@ -27,11 +29,14 @@ export function PlayerBar({
   speed,
   audioUrl,
   onTogglePlay,
+  onPlayingChange,
+  onTimeChange,
   onLoopChange,
   onAutoScrollChange,
   onSpeedChange
 }: PlayerBarProps) {
   const [playableAudioUrl, setPlayableAudioUrl] = useState("");
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -40,6 +45,7 @@ export function PlayerBar({
     async function loadAudio() {
       if (!audioUrl) {
         setPlayableAudioUrl("");
+        onTimeChange(0);
         return;
       }
 
@@ -63,7 +69,45 @@ export function PlayerBar({
         URL.revokeObjectURL(objectUrl);
       }
     };
-  }, [audioUrl]);
+  }, [audioUrl, onTimeChange]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !playableAudioUrl) {
+      return;
+    }
+
+    audio.playbackRate = Math.min(2, Math.max(0.25, speed / 100));
+    audio.loop = looping;
+
+    if (playing) {
+      audio.play().catch(() => onPlayingChange(false));
+    } else {
+      audio.pause();
+    }
+  }, [looping, playableAudioUrl, playing, speed, onPlayingChange]);
+
+  useEffect(() => {
+    if (!playing || !playableAudioUrl) {
+      return;
+    }
+
+    let frame = 0;
+    const tick = () => {
+      const audio = audioRef.current;
+      if (audio) {
+        onTimeChange(audio.currentTime * 1000);
+      }
+      frame = window.requestAnimationFrame(tick);
+    };
+
+    frame = window.requestAnimationFrame(tick);
+    return () => window.cancelAnimationFrame(frame);
+  }, [onTimeChange, playableAudioUrl, playing]);
+
+  function reportAudioTime(audio: HTMLAudioElement) {
+    onTimeChange(audio.currentTime * 1000);
+  }
 
   return (
     <div className="player-bar">
@@ -105,7 +149,19 @@ export function PlayerBar({
               onChange={(event) => onSpeedChange(Number(event.target.value))}
             />
           </label>
-          {playableAudioUrl ? <audio src={playableAudioUrl} controls /> : null}
+          {playableAudioUrl ? (
+            <audio
+              ref={audioRef}
+              src={playableAudioUrl}
+              controls
+              onPlay={() => onPlayingChange(true)}
+              onPause={() => onPlayingChange(false)}
+              onEnded={() => onPlayingChange(false)}
+              onLoadedMetadata={(event) => reportAudioTime(event.currentTarget)}
+              onSeeked={(event) => reportAudioTime(event.currentTarget)}
+              onTimeUpdate={(event) => reportAudioTime(event.currentTarget)}
+            />
+          ) : null}
         </div>
       </div>
     </div>

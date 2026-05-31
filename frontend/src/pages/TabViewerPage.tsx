@@ -1,5 +1,5 @@
 import { FileDown, Pencil, Plus, Save, Star, Trash2, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   addTabToPlaylist,
@@ -18,13 +18,8 @@ import { TabRenderer } from "../components/TabRenderer";
 import { errorMessage } from "../lib/errors";
 import { slugify } from "../lib/format";
 import { demoTab } from "../lib/demoTab";
-import { savePdfBlob } from "../lib/pdfExport";
 import { getTab, removeTab, upsertTab } from "../lib/tabStore";
 import type { GeneratedTab, PlaylistResponse } from "../types/tab";
-
-type PrintableTabApi = {
-  pause: () => void;
-};
 
 export function TabViewerPage() {
   const { tabId } = useParams();
@@ -35,6 +30,7 @@ export function TabViewerPage() {
   const [looping, setLooping] = useState(false);
   const [autoScroll, setAutoScroll] = useState(true);
   const [speed, setSpeed] = useState(100);
+  const [externalAudioTimeMs, setExternalAudioTimeMs] = useState(0);
   const [renderKey, setRenderKey] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -52,14 +48,6 @@ export function TabViewerPage() {
   const [favoriteSaving, setFavoriteSaving] = useState(false);
   const [deletingTab, setDeletingTab] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const tabApiRef = useRef<PrintableTabApi | null>(null);
-  const pdfExporterRef = useRef<(() => Promise<Blob>) | null>(null);
-  const handleTabApiChange = useCallback((api: PrintableTabApi | null) => {
-    tabApiRef.current = api;
-  }, []);
-  const handlePdfExporterChange = useCallback((exporter: (() => Promise<Blob>) | null) => {
-    pdfExporterRef.current = exporter;
-  }, []);
 
   useEffect(() => {
     let active = true;
@@ -144,25 +132,23 @@ export function TabViewerPage() {
     return `${tab.instrument} / ${tempo} / ${speed}% speed${looping ? " / loop on" : ""}`;
   }, [looping, speed, tab]);
 
-  async function downloadPdf() {
+  function downloadPdf() {
     if (!tab) return;
 
-    const api = tabApiRef.current;
-    const exportPdf = pdfExporterRef.current;
-    if (!api || !exportPdf || !ready) {
-      setError("The score is still rendering. Try again in a moment.");
-      return;
-    }
-
-    setError("");
     setPlaying(false);
-    api.pause();
-    try {
-      const blob = await exportPdf();
-      await savePdfBlob(blob, `${slugify(tab.title)}-tab.pdf`);
-    } catch (caught) {
-      setError(errorMessage(caught, "Unable to export this tab as a PDF."));
-    }
+    const previousTitle = document.title;
+    document.title = `${slugify(tab.title)}-tab`;
+
+    const restoreTitle = () => {
+      document.title = previousTitle;
+      window.removeEventListener("afterprint", restoreTitle);
+    };
+
+    window.addEventListener("afterprint", restoreTitle);
+    window.setTimeout(() => {
+      window.print();
+      window.setTimeout(restoreTitle, 1000);
+    }, 100);
   }
 
   function startEditing() {
@@ -408,14 +394,14 @@ export function TabViewerPage() {
                         <Trash2 size={17} />
                       </button>
                     ) : null}
-                    <button className="icon-btn subtle" title="Download PDF" disabled={!ready} onClick={downloadPdf}>
+                    <button className="icon-btn subtle" title="Download PDF" onClick={downloadPdf}>
                       <FileDown size={17} />
                     </button>
                   </div>
                 </>
               ) : (
                 <div className="score-tool-actions">
-                  <button className="icon-btn subtle" title="Download PDF" disabled={!ready} onClick={downloadPdf}>
+                  <button className="icon-btn subtle" title="Download PDF" onClick={downloadPdf}>
                     <FileDown size={17} />
                   </button>
                 </div>
@@ -430,8 +416,8 @@ export function TabViewerPage() {
             looping={looping}
             autoScroll={autoScroll}
             speed={speed}
-            onApiChange={handleTabApiChange}
-            onPdfExporterChange={handlePdfExporterChange}
+            enableSynthPlayback={!tab.audioUrl}
+            externalTimeMs={externalAudioTimeMs}
             onReadyChange={setReady}
             onPlayingChange={setPlaying}
           />
@@ -448,6 +434,8 @@ export function TabViewerPage() {
         speed={speed}
         audioUrl={tab.audioUrl}
         onTogglePlay={() => setPlaying((current) => !current)}
+        onPlayingChange={setPlaying}
+        onTimeChange={setExternalAudioTimeMs}
         onLoopChange={setLooping}
         onAutoScrollChange={setAutoScroll}
         onSpeedChange={setSpeed}

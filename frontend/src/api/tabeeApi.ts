@@ -7,8 +7,14 @@ import type {
   PlaylistRequest,
   PlaylistResponse,
   TabMetadataUpdate,
-  TabResponse
+  TabResponse,
+  TabSyncPoint
 } from "../types/tab";
+
+type AlphaTexToken = {
+  value: string;
+  beats: number;
+};
 
 export async function generateTab(request: GenerateTabRequest): Promise<GeneratedTab> {
   if (request.instrument !== "bass") {
@@ -20,6 +26,7 @@ export async function generateTab(request: GenerateTabRequest): Promise<Generate
 
   const formData = new FormData();
   formData.append("file", request.file);
+  formData.append("tuning", request.tuning);
 
   const response = await apiFetch<AudioUploadAndProcessResponse>("/api/audio-files/upload-and-process", {
     method: "POST",
@@ -187,6 +194,7 @@ export async function unsavePlaylist(playlistId: number): Promise<PlaylistRespon
 
 function toGeneratedTab(tab: TabResponse, uploadedFileName = "uploaded-audio", publicAudio = false): GeneratedTab {
   const jsonData = tab.jsonData || {};
+  const rendered = toAlphaTex(tab);
   return {
     id: String(tab.id),
     ownerUserId: tab.ownerUserId,
@@ -197,9 +205,10 @@ function toGeneratedTab(tab: TabResponse, uploadedFileName = "uploaded-audio", p
     instrument: jsonData.instrument || "bass",
     artist: tab.artist,
     tuning: tab.tuning ?? jsonData.tuning ?? null,
-    alphaTex: toAlphaTex(tab),
+    alphaTex: rendered.alphaTex,
+    syncMap: rendered.syncMap,
     audioUrl: jsonData.sourceAudioFile ? `/api/tabs/${publicAudio ? "public/" : ""}${tab.id}/audio` : undefined,
-    tempo: tab.estimatedTempo ?? jsonData.estimatedTempo ?? null,
+    tempo: rendered.tempo,
     createdAt: new Date(tab.createdAt).toLocaleString(),
     createdByCurrentUser: tab.createdByCurrentUser,
     favoritedByCurrentUser: tab.favoritedByCurrentUser,
@@ -209,115 +218,215 @@ function toGeneratedTab(tab: TabResponse, uploadedFileName = "uploaded-audio", p
 
 function toAlphaTex(tab: TabResponse) {
   const jsonData = tab.jsonData || {};
-  const tuning = (tab.tuning || jsonData.tuning || "EADG").toUpperCase();
+  const tuning = (tab.tuning || jsonData.tuning || "BEADG").toUpperCase();
   const tuningText = tuning === "BEADG" ? "(G2 D2 A1 E1 B0)" : "(G2 D2 A1 E1)";
   const notes = [...(jsonData.noteEvents || [])].sort((left, right) => Number(left.time) - Number(right.time));
-  const playableNotes = notes.length
-    ? toAlphaTexEvents(notes, tab.estimatedTempo ?? jsonData.estimatedTempo ?? null)
-    : [{ token: ":8 r", beats: 0.5 }];
-  const body = chunkAlphaTexEvents(playableNotes, 4)
-    .map((line) => `${line.join(" ")} |`)
-    .join("\n");
+  const tempo = resolveRenderTempo(notes, tab.estimatedTempo ?? jsonData.estimatedTempo ?? 90);
+  const rendered = toTimedAlphaTexTokens(notes, tempo || 90);
+  const body = toBarAlignedAlphaTex(rendered.tokens.length ? rendered.tokens : [{ value: ":4 r", beats: 1 }]);
 
-  return String.raw`\title "${escapeAlphaTexText(tab.title)}"
+  const alphaTex = String.raw`\title "${escapeAlphaTexText(tab.title)}"
 \artist "${escapeAlphaTexText(tab.artist || "TaBee")}"
+\tempo ${tempo || 90}
 \track "Bass"
 \staff {tabs}
 \tuning ${tuningText}
 ${body}`;
+
+  return {
+    alphaTex,
+    syncMap: rendered.syncMap,
+    tempo
+  };
 }
 
-function toAlphaTexNote(note: GeneratedNoteEvent) {
-  if (note.fret == null || note.stringNumber == null) {
-    return "r";
+function toTimedAlphaTexTokens(notes: GeneratedNoteEvent[], tempo: number) {
+  const secondsPerBeat = tempo > 0 ? 60 / tempo : 60 / 90;
+  const tokens: AlphaTexToken[] = [];
+  const syncMap: TabSyncPoint[] = [];
+  let scoreBeatCursor = 0;
+
+  notes.forEach((note, index) => {
+    const durationSeconds = inferEventDuration(note, notes[index + 1], secondsPerBeat);
+    const beatDuration = Math.max(0.125, durationSeconds / secondsPerBeat);
+    const durations = splitDurationToAlphaTex(beatDuration);
+    const noteValue = toAlphaTexNoteValue(note);
+    const scoreStartBeat = scoreBeatCursor;
+
+    durations.forEach((duration) => {
+      const beats = alphaTexDurationToBeats(duration);
+      tokens.push({ value: `:${duration} ${noteValue}`, beats });
+      scoreBeatCursor += beats;
+    });
+
+    syncMap.push({
+      audioStartMs: Math.max(0, Number(note.time) * 1000),
+      audioEndMs: Math.max(0, (Number(note.time) + durationSeconds) * 1000),
+      scoreStartMs: scoreStartBeat * secondsPerBeat * 1000,
+      scoreEndMs: scoreBeatCursor * secondsPerBeat * 1000
+    });
+  });
+
+  return { tokens, syncMap };
+}
+
+function resolveRenderTempo(notes: GeneratedNoteEvent[], storedTempo: number) {
+  const fallbackTempo = storedTempo && Number.isFinite(storedTempo) && storedTempo > 0 ? storedTempo : 90;
+  const detectedTempo = estimateTempoFromNoteEvents(notes);
+
+  if (!detectedTempo) {
+    return Math.round(fallbackTempo);
   }
 
+  return Math.abs(detectedTempo - fallbackTempo) >= 8 ? detectedTempo : Math.round(fallbackTempo);
+}
+
+function estimateTempoFromNoteEvents(notes: GeneratedNoteEvent[]) {
+  const onsetTimes = notes
+    .filter((note) => !note.isRest && Number.isFinite(note.time))
+    .map((note) => Number(note.time))
+    .sort((left, right) => left - right);
+
+  const candidateBpms: number[] = [];
+
+  for (let index = 1; index < onsetTimes.length; index += 1) {
+    const interval = onsetTimes[index] - onsetTimes[index - 1];
+
+    if (interval < 0.12 || interval > 2.5) {
+      continue;
+    }
+
+    let bpm = 60 / interval;
+    while (bpm > 150) bpm /= 2;
+    while (bpm < 70) bpm *= 2;
+
+    if (bpm >= 70 && bpm <= 150) {
+      candidateBpms.push(bpm);
+    }
+  }
+
+  if (candidateBpms.length < 4) {
+    return null;
+  }
+
+  candidateBpms.sort((left, right) => left - right);
+  const middle = Math.floor(candidateBpms.length / 2);
+  const median = candidateBpms.length % 2
+    ? candidateBpms[middle]
+    : (candidateBpms[middle - 1] + candidateBpms[middle]) / 2;
+
+  return Math.round(median);
+}
+
+function toBarAlignedAlphaTex(tokens: AlphaTexToken[]) {
+  const measureBeats = 4;
+  const barsPerLine = 2;
+  const lines: string[] = [];
+  let currentLine: string[] = [];
+  let currentMeasureBeats = 0;
+  let currentLineBars = 0;
+
+  tokens.forEach((token) => {
+    const tokenBeats = Math.max(0.25, token.beats || 1);
+
+    if (currentMeasureBeats > 0 && currentMeasureBeats + tokenBeats > measureBeats + 1e-6) {
+      currentLine.push("|");
+      currentMeasureBeats = 0;
+      currentLineBars += 1;
+
+      if (currentLineBars >= barsPerLine) {
+        lines.push(currentLine.join(" "));
+        currentLine = [];
+        currentLineBars = 0;
+      }
+    }
+
+    currentLine.push(token.value);
+    currentMeasureBeats += tokenBeats;
+
+    if (currentMeasureBeats >= measureBeats - 1e-6) {
+      currentLine.push("|");
+      currentMeasureBeats = 0;
+      currentLineBars += 1;
+
+      if (currentLineBars >= barsPerLine) {
+        lines.push(currentLine.join(" "));
+        currentLine = [];
+        currentLineBars = 0;
+      }
+    }
+  });
+
+  if (currentLine.length) {
+    if (currentLine[currentLine.length - 1] !== "|") {
+      currentLine.push("|");
+    }
+    lines.push(currentLine.join(" "));
+  }
+
+  return lines.join("\n");
+}
+
+function inferEventDuration(note: GeneratedNoteEvent, nextNote: GeneratedNoteEvent | undefined, secondsPerBeat: number) {
+  const nextGap = nextNote && Number.isFinite(nextNote.time) && Number.isFinite(note.time) && nextNote.time > note.time
+    ? nextNote.time - note.time
+    : null;
+
+  if (note.duration && Number.isFinite(note.duration) && note.duration > 0) {
+    return nextGap == null ? note.duration : Math.min(note.duration, nextGap);
+  }
+
+  if (nextGap != null) {
+    return nextGap;
+  }
+
+  return secondsPerBeat;
+}
+
+function toAlphaTexNoteValue(note: GeneratedNoteEvent) {
+  if (note.isRest || note.fret == null || note.stringNumber == null) {
+    return "r";
+  }
   return `${note.fret}.${note.stringNumber}`;
 }
 
-type AlphaTexEvent = {
-  token: string;
-  beats: number;
-};
+function splitDurationToAlphaTex(beatDuration: number) {
+  const available = [
+    { beats: 4, value: 1 },
+    { beats: 2, value: 2 },
+    { beats: 1, value: 4 },
+    { beats: 0.5, value: 8 },
+    { beats: 0.25, value: 16 }
+  ];
+  const roundedBeats = Math.max(0.25, Math.round(beatDuration * 4) / 4);
+  const result: number[] = [];
+  let remaining = roundedBeats;
 
-function toAlphaTexEvents(notes: GeneratedNoteEvent[], tempo: number | null): AlphaTexEvent[] {
-  return notes.flatMap((note) => {
-    const totalBeats = quantizeDurationBeats(noteDurationBeats(note, tempo));
-    const noteBeats = notePlaybackBeats(totalBeats);
-    const restBeats = roundBeatRemainder(totalBeats - noteBeats);
-    const events: AlphaTexEvent[] = [
-      {
-        token: `${durationPrefix(noteBeats)} ${toAlphaTexNote(note)}`,
-        beats: noteBeats
-      }
-    ];
-
-    if (restBeats >= 0.25) {
-      events.push({
-        token: `${durationPrefix(restBeats)} r`,
-        beats: restBeats
-      });
+  for (const option of available) {
+    while (remaining + 1e-6 >= option.beats) {
+      result.push(option.value);
+      remaining -= option.beats;
     }
-
-    return events;
-  });
-}
-
-function noteDurationBeats(note: GeneratedNoteEvent, tempo: number | null) {
-  if (!note.duration || !tempo || tempo <= 0) {
-    return 0.5;
   }
 
-  return note.duration * (tempo / 60);
+  return result.length ? result : [16];
 }
 
-function quantizeDurationBeats(beats: number) {
-  if (beats >= 1.5) return 2;
-  if (beats >= 0.75) return 1;
-  if (beats >= 0.375) return 0.5;
-  return 0.25;
-}
-
-function durationPrefix(beats: number) {
-  if (beats >= 2) return ":2";
-  if (beats >= 1) return ":4";
-  if (beats >= 0.5) return ":8";
-  return ":16";
-}
-
-function notePlaybackBeats(totalBeats: number) {
-  if (totalBeats >= 2) return 1;
-  if (totalBeats >= 1) return 0.5;
-  return totalBeats;
-}
-
-function roundBeatRemainder(beats: number) {
-  if (beats >= 0.75) return 1;
-  if (beats >= 0.375) return 0.5;
-  if (beats >= 0.1875) return 0.25;
-  return 0;
-}
-
-function chunkAlphaTexEvents(items: AlphaTexEvent[], beatsPerBar: number) {
-  const chunks: string[][] = [];
-  let current: string[] = [];
-  let currentBeats = 0;
-
-  for (const item of items) {
-    if (current.length && currentBeats + item.beats > beatsPerBar) {
-      chunks.push(current);
-      current = [];
-      currentBeats = 0;
-    }
-
-    current.push(item.token);
-    currentBeats += item.beats;
+function alphaTexDurationToBeats(duration: number) {
+  switch (duration) {
+    case 1:
+      return 4;
+    case 2:
+      return 2;
+    case 4:
+      return 1;
+    case 8:
+      return 0.5;
+    case 16:
+      return 0.25;
+    default:
+      return 1;
   }
-
-  if (current.length) {
-    chunks.push(current);
-  }
-  return chunks;
 }
 
 function sourceFileName(sourceAudio?: string) {

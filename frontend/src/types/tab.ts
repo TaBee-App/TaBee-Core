@@ -11,6 +11,7 @@ export interface GeneratedTab {
   artist?: string | null;
   tuning?: string | null;
   alphaTex: string;
+  syncMap?: TabSyncPoint[];
   audioUrl?: string;
   tempo?: number | null;
   createdAt: string;
@@ -19,10 +20,18 @@ export interface GeneratedTab {
   favoriteCount?: number;
 }
 
+export interface TabSyncPoint {
+  audioStartMs: number;
+  audioEndMs: number;
+  scoreStartMs: number;
+  scoreEndMs: number;
+}
+
 export interface GenerateTabRequest {
   file: File;
   title: string;
   instrument: Instrument;
+  tuning: "EADG" | "BEADG";
 }
 
 export interface GenerateTabResponse {
@@ -36,6 +45,7 @@ export interface GenerateTabResponse {
 }
 
 export interface GeneratedNoteEvent {
+  isRest?: boolean;
   time: number;
   duration?: number | null;
   frequency?: number | null;

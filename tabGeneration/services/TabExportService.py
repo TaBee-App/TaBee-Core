@@ -23,15 +23,38 @@ class TabExportService:
         tuning: str = "EADG",
     ) -> dict[str, Any]:
         note_events = []
+        beat_seconds = 60.0 / float(detection.tempo_bpm) if detection.tempo_bpm else 0.5
+        min_rest_seconds = max(0.06, beat_seconds / 4.0)
+
+        if assignments and assignments[0].time_s >= min_rest_seconds:
+            note_events.append(
+                {
+                    "isRest": True,
+                    "time": 0.0,
+                    "duration": round(assignments[0].time_s, 4),
+                    "frequency": None,
+                    "confidence": None,
+                    "noteName": None,
+                    "midiNumber": None,
+                    "fret": None,
+                    "stringNumber": None,
+                }
+            )
+
         for index, assignment in enumerate(assignments):
             next_time = (
                 assignments[index + 1].time_s
                 if index + 1 < len(assignments)
                 else None
             )
-            duration = None if next_time is None else max(0.0, next_time - assignment.time_s)
+            gap_duration = None if next_time is None else max(0.0, next_time - assignment.time_s)
+            duration = assignment.duration_s if assignment.duration_s is not None else gap_duration
+            if gap_duration is not None and duration is not None:
+                duration = min(duration, gap_duration)
+
             note_events.append(
                 {
+                    "isRest": False,
                     "time": round(assignment.time_s, 4),
                     "duration": None if duration is None else round(duration, 4),
                     "frequency": round(assignment.frequency_hz, 3),
@@ -42,6 +65,24 @@ class TabExportService:
                     "stringNumber": assignment.position.string_number,
                 }
             )
+
+            if next_time is not None and duration is not None:
+                rest_start = assignment.time_s + duration
+                rest_duration = max(0.0, next_time - rest_start)
+                if rest_duration >= min_rest_seconds:
+                    note_events.append(
+                        {
+                            "isRest": True,
+                            "time": round(rest_start, 4),
+                            "duration": round(rest_duration, 4),
+                            "frequency": None,
+                            "confidence": None,
+                            "noteName": None,
+                            "midiNumber": None,
+                            "fret": None,
+                            "stringNumber": None,
+                        }
+                    )
 
         return {
             "sourceAudio": source_audio,

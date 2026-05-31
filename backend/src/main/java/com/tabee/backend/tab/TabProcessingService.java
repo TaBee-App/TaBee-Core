@@ -24,6 +24,7 @@ import com.tabee.backend.user.User;
 @Service
 public class TabProcessingService {
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of(".wav", ".mp4", ".mp3");
+    private static final Set<String> ALLOWED_TUNINGS = Set.of("EADG", "BEADG");
     private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
             "audio/wav",
             "audio/x-wav",
@@ -57,12 +58,13 @@ public class TabProcessingService {
         this.processingTimeout = Duration.ofMinutes(processingTimeoutMinutes);
     }
 
-    public Tab generateTabFromUpload(User owner, MultipartFile audioFile) {
+    public Tab generateTabFromUpload(User owner, MultipartFile audioFile, String tuning) {
         if (audioFile == null || audioFile.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Audio file is required");
         }
 
         validateSupportedAudioFile(audioFile);
+        String normalizedTuning = normalizeTuning(tuning);
 
         Path outputDir;
         try {
@@ -78,7 +80,7 @@ public class TabProcessingService {
         try {
             audioFile.transferTo(audioPath);
         Path processorLog = jsonOut.resolveSibling("processor.log");
-        runPythonProcessor(audioPath, jsonOut, processorLog);
+        runPythonProcessor(audioPath, jsonOut, processorLog, normalizedTuning);
             GeneratedTabResult result = readResult(jsonOut);
             JsonNode tabJson = objectMapper.valueToTree(result);
 
@@ -107,7 +109,7 @@ public class TabProcessingService {
         }
     }
 
-    private void runPythonProcessor(Path audioPath, Path jsonOut, Path processorLog) {
+    private void runPythonProcessor(Path audioPath, Path jsonOut, Path processorLog, String tuning) {
         ProcessBuilder processBuilder = new ProcessBuilder(
                 pythonCommand,
                 "cli/audio_to_tab.py",
@@ -117,7 +119,7 @@ public class TabProcessingService {
                 "--ascii-out",
                 jsonOut.resolveSibling("tab.txt").toString(),
                 "--tuning",
-                "EADG"
+                tuning
         );
         processBuilder.directory(coreRoot.toFile());
         processBuilder.redirectErrorStream(true);
@@ -196,6 +198,21 @@ public class TabProcessingService {
                     "Unsupported file format. Please upload a .wav, .mp3, or .mp4 file."
             );
         }
+    }
+
+    private String normalizeTuning(String tuning) {
+        String normalized = tuning == null || tuning.isBlank()
+                ? "EADG"
+                : tuning.trim().toUpperCase(Locale.ROOT);
+
+        if (!ALLOWED_TUNINGS.contains(normalized)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Unsupported tuning. Please use EADG or BEADG."
+            );
+        }
+
+        return normalized;
     }
 
     private void deleteQuietly(Path directory) {

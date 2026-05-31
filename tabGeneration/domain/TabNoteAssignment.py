@@ -9,6 +9,7 @@ from .FretPosition import FretPosition
 @dataclass(frozen=True)
 class TabNoteAssignment:
     time_s: float
+    duration_s: float | None
     frequency_hz: float
     confidence: float
     midi_note: Optional[int]

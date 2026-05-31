@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
 import librosa
 import numpy as np
@@ -15,19 +15,15 @@ class PitchConfig:
     """Configuration for bass pitch readout after pluck candidates."""
 
     fmin_hz: float = 32.0
-    fmax_hz: float = 220.0
+    fmax_hz: float = 180.0
     hop_length: int = 256
     frame_length: int = 8192
-    min_read_delay_s: float = 0.035
-    max_read_delay_s: float = 0.11
-    max_window_s: float = 0.22
+    min_read_delay_s: float = 0.02
+    max_read_delay_s: float = 0.08
+    max_window_s: float = 0.18
     pre_next_pluck_margin_s: float = 0.015
-    min_window_s: float = 0.06
+    min_window_s: float = 0.05
     min_confidence: float = 0.01
-    harmonic_tolerance_semitones: float = 0.45
-    max_note_jump_semitones: int = 9
-    short_note_delay_ratio: float = 0.28
-    short_note_window_ratio: float = 0.65
 
 
 class OnsetPitchEstimator(PitchEstimator):
@@ -65,12 +61,10 @@ class OnsetPitchEstimator(PitchEstimator):
                 else onset_t + cfg.max_window_s + cfg.max_read_delay_s
             )
 
-            note_span_s = max(0.0, next_onset_t - onset_t)
-            delay_s = self._read_delay_s(candidate, note_span_s)
+            delay_s = self._read_delay_s(candidate)
             t0 = onset_t + delay_s
-            max_window_s = min(cfg.max_window_s, max(cfg.min_window_s, note_span_s * cfg.short_note_window_ratio))
             t1 = min(
-                onset_t + delay_s + max_window_s,
+                onset_t + delay_s + cfg.max_window_s,
                 next_onset_t - cfg.pre_next_pluck_margin_s,
             )
 
@@ -97,87 +91,60 @@ class OnsetPitchEstimator(PitchEstimator):
                 confidences.append(0.0)
                 continue
 
-            f_valid = f_slice[mask].astype(float)
-            p_valid = p_slice[mask].astype(float)
+            f_valid = f_slice[mask]
+            p_valid = p_slice[mask]
 
-            pitch = self._robust_pitch(f_valid, p_valid)
-            pitch = self._stabilize_against_previous(pitch, pitches)
+            pitch = float(np.median(f_valid))
             conf = float(np.median(p_valid))
             if (not np.isfinite(pitch)) or pitch <= 0.0 or conf < cfg.min_confidence:
                 pitch = 0.0
                 conf = 0.0
+            elif pitch < 45.0 and conf < 0.12:
+                pitch = self._correct_low_subharmonic(y, sr, t0, t1, pitch)
 
             pitches.append(pitch)
             confidences.append(conf)
 
         return pitches, confidences
 
-    def _read_delay_s(self, candidate: PluckCandidate, note_span_s: float) -> float:
+    def _read_delay_s(self, candidate: PluckCandidate) -> float:
         env = max(0.0, min(candidate.envelope_strength, 1.0))
         attack_weight = 1.0 - env
         span = self._cfg.max_read_delay_s - self._cfg.min_read_delay_s
-        delay = self._cfg.min_read_delay_s + (attack_weight * span)
-        if note_span_s > 0.0:
-            delay = min(delay, max(0.012, note_span_s * self._cfg.short_note_delay_ratio))
-        return delay
+        return self._cfg.min_read_delay_s + (attack_weight * span)
 
-    def _robust_pitch(self, frequencies: np.ndarray, probabilities: np.ndarray) -> float:
-        if frequencies.size == 0:
-            return 0.0
-
-        probabilities = np.maximum(probabilities, 1e-6)
-        midi = 69.0 + (12.0 * np.log2(frequencies / 440.0))
-        rounded = np.rint(midi).astype(int)
-        unique_notes = np.unique(rounded)
-
-        best_note = int(unique_notes[0])
-        best_weight = -1.0
-        for note in unique_notes:
-            distance = np.abs(midi - float(note))
-            in_cluster = distance <= self._cfg.harmonic_tolerance_semitones
-            weight = float(np.sum(probabilities[in_cluster]))
-            if weight > best_weight:
-                best_weight = weight
-                best_note = int(note)
-
-        note_mask = np.abs(midi - float(best_note)) <= self._cfg.harmonic_tolerance_semitones
-        if not np.any(note_mask):
-            return float(np.median(frequencies))
-
-        return self._weighted_median(frequencies[note_mask], probabilities[note_mask])
-
-    def _stabilize_against_previous(self, pitch: float, previous_pitches: List[float]) -> float:
-        previous = self._last_valid_pitch(previous_pitches)
-        if previous is None or pitch <= 0.0:
+    def _correct_low_subharmonic(
+        self,
+        y: np.ndarray,
+        sr: int,
+        t0: float,
+        t1: float,
+        pitch: float,
+    ) -> float:
+        doubled = pitch * 2.0
+        if doubled > self._cfg.fmax_hz:
             return pitch
 
-        corrected = float(pitch)
-        previous_midi = 69.0 + (12.0 * np.log2(previous / 440.0))
+        start = max(0, int(round(t0 * sr)))
+        end = min(len(y), int(round(t1 * sr)))
+        if end <= start + 16:
+            return pitch
 
-        while corrected > self._cfg.fmin_hz * 2.0:
-            current_midi = 69.0 + (12.0 * np.log2(corrected / 440.0))
-            if abs(current_midi - previous_midi) <= self._cfg.max_note_jump_semitones:
-                break
+        segment = y[start:end]
+        window = np.hanning(segment.size)
+        spectrum = np.abs(np.fft.rfft(segment * window))
+        freqs = np.fft.rfftfreq(segment.size, d=1.0 / sr)
 
-            octave_down = corrected / 2.0
-            octave_midi = 69.0 + (12.0 * np.log2(octave_down / 440.0))
-            if abs(octave_midi - previous_midi) >= abs(current_midi - previous_midi):
-                break
-            corrected = octave_down
+        base_energy = self._band_energy(freqs, spectrum, pitch)
+        doubled_energy = self._band_energy(freqs, spectrum, doubled)
 
-        return corrected
+        if doubled_energy > base_energy * 1.35:
+            return doubled
+        return pitch
 
-    def _last_valid_pitch(self, pitches: List[float]) -> Optional[float]:
-        for pitch in reversed(pitches):
-            if pitch > 0.0 and np.isfinite(pitch):
-                return float(pitch)
-        return None
-
-    def _weighted_median(self, values: np.ndarray, weights: np.ndarray) -> float:
-        order = np.argsort(values)
-        sorted_values = values[order]
-        sorted_weights = weights[order]
-        cumulative = np.cumsum(sorted_weights)
-        midpoint = float(cumulative[-1]) / 2.0
-        index = int(np.searchsorted(cumulative, midpoint, side="left"))
-        return float(sorted_values[min(index, sorted_values.size - 1)])
+    def _band_energy(self, freqs: np.ndarray, spectrum: np.ndarray, center_hz: float) -> float:
+        width = max(2.0, center_hz * 0.04)
+        mask = (freqs >= center_hz - width) & (freqs <= center_hz + width)
+        if not np.any(mask):
+            return 0.0
+        return float(np.sum(spectrum[mask]))

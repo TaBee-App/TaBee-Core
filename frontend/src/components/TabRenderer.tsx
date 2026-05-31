@@ -1,8 +1,7 @@
 import * as alphaTab from "@coderline/alphatab";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { errorMessage } from "../lib/errors";
-import { exportScoreElementToPdf } from "../lib/pdfExport";
-import type { GeneratedTab } from "../types/tab";
+import type { GeneratedTab, TabSyncPoint } from "../types/tab";
 
 type PlaybackBeat = {
   absolutePlaybackStart: number;
@@ -23,14 +22,16 @@ type LoopRange = {
   endBeat: PlaybackBeat;
 };
 
+const EXTERNAL_CURSOR_RENDER_LEAD_MS = 45;
+
 interface TabRendererProps {
   tab: GeneratedTab | null;
   playing: boolean;
   looping: boolean;
   autoScroll: boolean;
   speed: number;
-  onApiChange?: (api: alphaTab.AlphaTabApi | null) => void;
-  onPdfExporterChange?: (exporter: (() => Promise<Blob>) | null) => void;
+  enableSynthPlayback?: boolean;
+  externalTimeMs?: number;
   onReadyChange: (ready: boolean) => void;
   onPlayingChange: (playing: boolean) => void;
 }
@@ -41,8 +42,8 @@ export function TabRenderer({
   looping,
   autoScroll,
   speed,
-  onApiChange,
-  onPdfExporterChange,
+  enableSynthPlayback = true,
+  externalTimeMs = 0,
   onReadyChange,
   onPlayingChange
 }: TabRendererProps) {
@@ -67,13 +68,11 @@ export function TabRenderer({
   const destroy = useCallback(() => {
     apiRef.current?.destroy();
     apiRef.current = null;
-    onApiChange?.(null);
-    onPdfExporterChange?.(null);
     currentBeatRef.current = null;
     hasHighlightedRangeRef.current = false;
     pendingLoopRangeRef.current = null;
     onReadyChange(false);
-  }, [onApiChange, onPdfExporterChange, onReadyChange]);
+  }, [onReadyChange]);
 
   const getFirstBeat = useCallback((api: alphaTab.AlphaTabApi): PlaybackBeat | null => {
     const score = api.score as unknown as {
@@ -179,8 +178,7 @@ export function TabRenderer({
     try {
       const api = new alphaTab.AlphaTabApi(hostRef.current, {
         core: {
-          engine: "html5",
-          enableLazyLoading: false
+          engine: "html5"
         },
         notation: {
           rhythmMode: alphaTab.TabRhythmMode.ShowWithBars
@@ -199,6 +197,9 @@ export function TabRenderer({
         },
         player: {
           enablePlayer: true,
+          playerMode: enableSynthPlayback
+            ? alphaTab.PlayerMode.EnabledSynthesizer
+            : alphaTab.PlayerMode.EnabledExternalMedia,
           enableCursor: true,
           enableAnimatedBeatCursor: true,
           enableUserInteraction: true,
@@ -209,14 +210,6 @@ export function TabRenderer({
       });
 
       apiRef.current = api;
-      onApiChange?.(api);
-      onPdfExporterChange?.(() => {
-        const host = hostRef.current;
-        if (!host) {
-          return Promise.reject(new Error("The score is not ready to export yet."));
-        }
-        return exportScoreElementToPdf(host);
-      });
       api.scoreLoaded.on(() => {
         currentBeatRef.current = getFirstBeat(api);
         onReadyChange(true);
@@ -293,6 +286,22 @@ export function TabRenderer({
 
   useEffect(() => {
     const api = apiRef.current;
+    if (!api || enableSynthPlayback) {
+      return;
+    }
+
+    const nextTime = Math.max(0, (Number(externalTimeMs) || 0) + EXTERNAL_CURSOR_RENDER_LEAD_MS);
+    const scoreTimeMs = mapAudioTimeToScoreTime(nextTime, tab?.syncMap);
+    api.timePosition = scoreTimeMs;
+    api.tickPosition = scoreTimeToTicks(scoreTimeMs, tab?.tempo);
+
+    if (autoScroll && playing) {
+      api.scrollToCursor();
+    }
+  }, [autoScroll, enableSynthPlayback, externalTimeMs, playing, tab?.syncMap, tab?.tempo]);
+
+  useEffect(() => {
+    const api = apiRef.current;
     if (!api || previousLoopingRef.current === looping) return;
 
     previousLoopingRef.current = looping;
@@ -314,12 +323,15 @@ export function TabRenderer({
   useEffect(() => {
     const api = apiRef.current;
     if (!api) return;
+    if (!enableSynthPlayback) {
+      return;
+    }
     if (playing) {
       api.play();
     } else {
       api.pause();
     }
-  }, [playing]);
+  }, [enableSynthPlayback, playing]);
 
   return (
     <div className="score-body">
@@ -335,4 +347,44 @@ export function TabRenderer({
       <div ref={hostRef} className="alpha-tab-host" style={{ display: tab ? "block" : "none" }} />
     </div>
   );
+}
+
+function mapAudioTimeToScoreTime(audioTimeMs: number, syncMap: TabSyncPoint[] | undefined) {
+  if (!syncMap?.length) {
+    return audioTimeMs;
+  }
+
+  const first = syncMap[0];
+  if (audioTimeMs <= first.audioStartMs) {
+    return Math.max(0, first.scoreStartMs);
+  }
+
+  for (let index = 0; index < syncMap.length - 1; index += 1) {
+    const current = syncMap[index];
+    const next = syncMap[index + 1];
+
+    if (audioTimeMs <= next.audioStartMs) {
+      const audioSpan = Math.max(1, next.audioStartMs - current.audioStartMs);
+      const scoreSpan = Math.max(1, next.scoreStartMs - current.scoreStartMs);
+      const ratio = (audioTimeMs - current.audioStartMs) / audioSpan;
+      return current.scoreStartMs + Math.max(0, Math.min(1, ratio)) * scoreSpan;
+    }
+  }
+
+  const last = syncMap[syncMap.length - 1];
+  if (audioTimeMs <= last.audioEndMs) {
+    const audioSpan = Math.max(1, last.audioEndMs - last.audioStartMs);
+    const scoreSpan = Math.max(1, last.scoreEndMs - last.scoreStartMs);
+    const ratio = (audioTimeMs - last.audioStartMs) / audioSpan;
+    return last.scoreStartMs + Math.max(0, Math.min(1, ratio)) * scoreSpan;
+  }
+
+  return last.scoreEndMs + Math.max(0, audioTimeMs - last.audioEndMs);
+}
+
+function scoreTimeToTicks(scoreTimeMs: number, tempo: number | null | undefined) {
+  const bpm = tempo && Number.isFinite(tempo) && tempo > 0 ? tempo : 90;
+  const ticksPerQuarter = 960;
+  const beatDurationMs = 60000 / bpm;
+  return Math.max(0, Math.round((scoreTimeMs / beatDurationMs) * ticksPerQuarter));
 }
