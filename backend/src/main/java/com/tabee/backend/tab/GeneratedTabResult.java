@@ -3,11 +3,15 @@ package com.tabee.backend.tab;
 import java.math.BigDecimal;
 import java.util.List;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 public record GeneratedTabResult(
         String sourceAudio,
         String instrument,
         String tuning,
         Integer estimatedTempo,
+        Integer beatsPerBar,
+        JsonNode algorithm,
         Summary summary,
         List<GeneratedNoteEvent> noteEvents
 ) {

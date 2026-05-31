@@ -62,6 +62,7 @@ export interface GeneratedTabJson {
   instrument?: Instrument;
   tuning?: string;
   estimatedTempo?: number | null;
+  beatsPerBar?: number | null;
   noteEvents?: GeneratedNoteEvent[];
   summary?: {
     detectedOnsets?: number;

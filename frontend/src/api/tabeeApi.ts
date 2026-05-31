@@ -219,15 +219,17 @@ function toGeneratedTab(tab: TabResponse, uploadedFileName = "uploaded-audio", p
 function toAlphaTex(tab: TabResponse) {
   const jsonData = tab.jsonData || {};
   const tuning = (tab.tuning || jsonData.tuning || "BEADG").toUpperCase();
-  const tuningText = tuning === "BEADG" ? "(G2 D2 A1 E1 B0)" : "(G2 D2 A1 E1)";
+  const tuningText = alphaTexTuningText(tuning);
   const notes = [...(jsonData.noteEvents || [])].sort((left, right) => Number(left.time) - Number(right.time));
   const tempo = resolveRenderTempo(notes, tab.estimatedTempo ?? jsonData.estimatedTempo ?? 90);
+  const beatsPerBar = resolveBeatsPerBar(jsonData.beatsPerBar);
   const rendered = toTimedAlphaTexTokens(notes, tempo || 90);
-  const body = toBarAlignedAlphaTex(rendered.tokens.length ? rendered.tokens : [{ value: ":4 r", beats: 1 }]);
+  const body = toBarAlignedAlphaTex(rendered.tokens.length ? rendered.tokens : [{ value: ":4 r", beats: 1 }], beatsPerBar);
 
   const alphaTex = String.raw`\title "${escapeAlphaTexText(tab.title)}"
 \artist "${escapeAlphaTexText(tab.artist || "TaBee")}"
 \tempo ${tempo || 90}
+\ts ${beatsPerBar} 4
 \track "Bass"
 \staff {tabs}
 \tuning ${tuningText}
@@ -318,8 +320,7 @@ function estimateTempoFromNoteEvents(notes: GeneratedNoteEvent[]) {
   return Math.round(median);
 }
 
-function toBarAlignedAlphaTex(tokens: AlphaTexToken[]) {
-  const measureBeats = 4;
+function toBarAlignedAlphaTex(tokens: AlphaTexToken[], measureBeats = 4) {
   const barsPerLine = 2;
   const lines: string[] = [];
   let currentLine: string[] = [];
@@ -365,6 +366,27 @@ function toBarAlignedAlphaTex(tokens: AlphaTexToken[]) {
   }
 
   return lines.join("\n");
+}
+
+function alphaTexTuningText(tuning: string) {
+  switch (tuning) {
+    case "BEADG":
+      return "(G2 D2 A1 E1 B0)";
+    case "CGCF":
+      return "(F2 C2 G1 C1)";
+    case "EBABDBGB":
+      return "(Gb2 Db2 Ab1 Eb1)";
+    case "EADG":
+    default:
+      return "(G2 D2 A1 E1)";
+  }
+}
+
+function resolveBeatsPerBar(value?: number | null) {
+  if (!value || !Number.isFinite(value)) {
+    return 4;
+  }
+  return Math.min(12, Math.max(2, Math.round(value)));
 }
 
 function inferEventDuration(note: GeneratedNoteEvent, nextNote: GeneratedNoteEvent | undefined, secondsPerBeat: number) {

@@ -21,6 +21,7 @@ class TabExportService:
         detection: DetectionResult,
         assignments: Sequence[TabNoteAssignment],
         tuning: str = "EADG",
+        beats_per_bar: int = 4,
     ) -> dict[str, Any]:
         note_events = []
         beat_seconds = 60.0 / float(detection.tempo_bpm) if detection.tempo_bpm else 0.5
@@ -89,9 +90,11 @@ class TabExportService:
             "instrument": "bass",
             "tuning": tuning,
             "estimatedTempo": detection.tempo_bpm,
+            "beatsPerBar": int(beats_per_bar),
             "algorithm": {
                 "onsetDetection": "bass envelope rise + spectral flux",
                 "pitchDetection": "librosa.pyin median pitch per onset window",
+                "postProcessing": "confidence filter, close-duplicate collapse, beat-grid timing quantization",
                 "tabOptimization": "Viterbi dynamic programming with playability transition costs",
             },
             "summary": {

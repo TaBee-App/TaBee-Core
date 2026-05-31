@@ -24,6 +24,7 @@
 \usepackage{pdflscape}
 % Page headers are set to top right
 \usepackage{fancyhdr}
+\usepackage[htt]{hyphenat}
 \pagestyle{fancy}
 \renewcommand{\footrulewidth}{0pt} % clear rulers
 \renewcommand{\headrulewidth}{0pt}
@@ -186,7 +187,7 @@
         \vspace{1.5cm}
         \large{Advisor: Assoc. Prof. Dr. Feza Buzluca} \\
         \vspace{\fill} % Fill out until the page end
-        \large{\normalfont \sffamily \thedate}
+        \large{\normalfont \sffamily June 2026}
     \end{center}
 \end{titlepage}
 
@@ -199,7 +200,7 @@ I/we hereby declare that in this study
     \item and all the remaining sections, especially the theoretical studies and implemented software/hardware that constitute the fundamental essence of this study is originated by my/our individual authenticity.
 \end{enumerate}
 \vspace{1em}
-İstanbul, \theturkishdate
+İstanbul, Haziran 2026
 \vspace{3em}\\ \theauthor
 
 \newpage
@@ -211,10 +212,10 @@ We also thank the ITU Department of Computer Engineering faculty for fostering a
 \newpage
 \section*{\centering\thetitle}
 \centerline{\fontsize{16pt}{21.6pt}\sffamily\bfseries (SUMMARY)}
-TaBee is an Internet based application which is expected to machine translate audio recordings into instrument tablature using digital signal processing (DSP) technology and algorithm optimization. The main objective of the project is to minimize.
+TaBee is an Internet based application which is expected to machine translate audio recordings into instrument tablature using digital signal processing (DSP) technology and algorithm optimization. Automatic music transcription is a central problem in music information retrieval because it requires symbolic musical information to be inferred from audio signals \cite{klapuri2004,benetos2013}. The main objective of the project is to minimize.
 the labor that was necessary to translate music manually by listening to audio signals and creating playable and correct tablature on stringed instruments. The system can serve the needs of the musicians, music learners, and educators that need a practical and convenient tool of transcription by converting raw audio into musical data and optimal fret placements.
 
-Technically, the project uses an audio analysis pipeline, which works on audio files uploaded to it to produce key musical features, including pitch, onset, and tempo. Pitches and onsets of the detected are joined together into time-aligned notes, which are assigned to the instrument fretboard according to the tuning restrictions. An optimization algorithm based on cost is used to find the most appropriate positions of the fret and strings, considering the playability and realistic fingering. This makes sure that the produced tablature is a mirror image of the musical content of the audio as well as the physical limitations of the instrument.
+Technically, the project uses an audio analysis pipeline, which works on audio files uploaded to it to produce key musical features, including pitch, onset, and tempo. Onset detection and fundamental frequency estimation are well-known subproblems of music signal analysis \cite{bello2005,mauch2014}. Pitches and onsets of the detected are joined together into time-aligned notes, which are assigned to the instrument fretboard according to the tuning restrictions. An optimization algorithm based on cost is used to find the most appropriate positions of the fret and strings, considering the playability and realistic fingering. This makes sure that the produced tablature is a mirror image of the musical content of the audio as well as the physical limitations of the instrument.
 
 TaBee is a modular web application that has frontend, backend and audio processing modules. The user interface will enable the musicians to see the generated tablature where it can be played along with the original audio, tempo modified, looped.
 sections and export in standard formats e.g. MIDI and JSON. The project at the current stage is aimed at developing a stable end-to-end pipeline that becomes the basis of further development like the audio source.
@@ -235,7 +236,7 @@ In its final form, TaBee also includes a social and organizational layer around 
 \newpage
 \section*{\centering\theturkishtitle}
 \centerline{\fontsize{16pt}{21.6pt}\sffamily\bfseries (ÖZET)}
-TaBee, dijital sinyal işleme (DSP) teknikleri ve algoritmik optimizasyon yöntemlerini kullanarak ses kayıtlarının enstrüman tablatürüne otomatik olarak dönüştürülmesini amaçlayan web tabanlı bir sistemdir. Projenin temel amacı, müzik transkripsiyonu sırasında gereken manuel emeği azaltmak ve ses sinyallerini analiz ederek doğru ve çalınabilir tablatürler üretmektir. Ham ses verisinin yapılandırılmış müzikal bilgilere ve optimize edilmiş perde konumlarına dönüştürülmesiyle, sistem müzisyenler, müzik öğrencileri ve eğitmenler için erişilebilir ve pratik bir araç sunmayı hedeflemektedir.
+TaBee, dijital sinyal işleme (DSP) teknikleri ve algoritmik optimizasyon yöntemlerini kullanarak ses kayıtlarının enstrüman tablatürüne otomatik olarak dönüştürülmesini amaçlayan web tabanlı bir sistemdir. Otomatik müzik transkripsiyonu, müzik bilgi erişimi alanında ses sinyalinden sembolik müzik bilgisinin çıkarılmasını gerektiren temel problemlerden biridir \cite{klapuri2004,benetos2013}. Projenin temel amacı, müzik transkripsiyonu sırasında gereken manuel emeği azaltmak ve ses sinyallerini analiz ederek doğru ve çalınabilir tablatürler üretmektir. Ham ses verisinin yapılandırılmış müzikal bilgilere ve optimize edilmiş perde konumlarına dönüştürülmesiyle, sistem müzisyenler, müzik öğrencileri ve eğitmenler için erişilebilir ve pratik bir araç sunmayı hedeflemektedir.
 
 Teknik açıdan proje, yüklenen ses dosyalarından perde (pitch), vuruş başlangıcı (onset) ve tempo gibi temel müzikal özellikleri çıkaran bir ses analiz hattı üzerine kuruludur. Tespit edilen perdeler ve onset bilgileri zamanla hizalanmış notalara dönüştürülmekte, bu notalar ise enstrüman akordu ve fiziksel kısıtlar dikkate alınarak klavye (fretboard) üzerinde uygun konumlara eşlenmektedir. Çalınabilirliği önceliklendiren maliyet tabanlı bir optimizasyon algoritması sayesinde, üretilen tablatürler hem müzikal doğruluğu hem de gerçekçi parmak pozisyonlarını sağlamaktadır.
 
@@ -262,7 +263,7 @@ Projenin son halinde TaBee, yalnızca ses dosyasını tablatüre dönüştüren 
 \section{Introduction}
 
 \subsection{Motivation}
-Automatic Music Transcription (AMT) is one of the major challenges of Music Information Retrieval (MIR). The standard notation (including sheet music) systems are widely used and apply to most instruments, but they do not offer the specific physical execution instructions that are necessary for stringed instruments. The frequency of a note can be achieved on the fretboard in a variety of different places, and in order to play the note properly, it has to be in a position that is as comfortable as possible to the bass guitarist, which can be a challenging optimization problem. Existing commercial software (such as Melodyne, Riffstation) tend to be based on general frequency detection and chord recognition, without taking into account the biomechanics of bass guitar playing. 
+Automatic Music Transcription (AMT) is one of the major challenges of Music Information Retrieval (MIR) \cite{downie2003,casey2008,benetos2013}. The standard notation (including sheet music) systems are widely used and apply to most instruments, but they do not offer the specific physical execution instructions that are necessary for stringed instruments. The frequency of a note can be achieved on the fretboard in a variety of different places, and in order to play the note properly, it has to be in a position that is as comfortable as possible to the bass guitarist, which can be a challenging optimization problem. Existing commercial software (such as Melodyne, Riffstation) tend to be based on general frequency detection and chord recognition, without taking into account the biomechanics of bass guitar playing. 
 
 The TaBee project tries to address this by offering a complete transcription pipeline that generates optimized transcription in tablature format from raw audio. This system gives musicians more power, as it saves a time-consuming manual transcription process.
 
@@ -286,24 +287,24 @@ The project scope includes the implementation of a full-stack web application wi
 % User -> React Frontend -> Java Backend -> Python DSP CLI -> Database (PostgreSQL)]
 
 \subsection{Thesis/Project Contribution}
-This work adds a biomechanically-inspired cost-function-based approach to tablature generation in a deterministic manner. In contrast with the stochastic methods (e.g., the Genetic Algorithms), we use graph-based Viterbi optimization that yields a globally optimal solution with time complexity $O(N \cdot S^2)$ and is suitable for real-time web-based applications.
+This work adds a biomechanically-inspired cost-function-based approach to tablature generation in a deterministic manner. In contrast with the stochastic methods (e.g., the Genetic Algorithms), we use graph-based Viterbi optimization that yields a globally optimal solution with time complexity $O(N \cdot S^2)$ and is suitable for real-time web-based applications \cite{forney1973,sayegh1989,hori2013}.
 
 \newpage
 \section{Comparative Literature Survey}
 
 \subsection{Automatic Music Transcription (AMT)}
-Automatic Music Transcription (AMT) is a multi-dimensional problem in Music Information Retrieval (MIR). The difficulty in bass guitar transcription is not so much the detection of onsets and durations, as it is the problem of pitch ambiguity at the fundamental level: a given pitch can be played at a number of different combinations of frets and strings. Therefore, a high-quality AMT system needs to combine digital signal processing (DSP) and a physical constraint-aware optimization layer.
+Automatic Music Transcription (AMT) is a multi-dimensional problem in Music Information Retrieval (MIR) \cite{klapuri2004,klapuri2006,benetos2013}. The difficulty in bass guitar transcription is not so much the detection of onsets and durations, as it is the problem of pitch ambiguity at the fundamental level: a given pitch can be played at a number of different combinations of frets and strings. Therefore, a high-quality AMT system needs to combine digital signal processing (DSP) and a physical constraint-aware optimization layer.
 
 
 \subsection{Literature Analysis on Tablature Allocation}
 There are three general approaches to fretboard mapping: rule-based systems, global optimization (GA) and probabilistic sequential models (HMMs).
 
 \begin{enumerate}
-    \item \textbf{Rule-Based Heuristics:} Early research was based on manually designed geometric constraints, including penalizing distance between successive notes. They work well for simpler melodies, but cannot be used to convey "phrasing" and are not very effective at complex syncopations, creating too stiff tablatures.
+    \item \textbf{Rule-Based Heuristics:} Early research was based on manually designed geometric constraints, including penalizing distance between successive notes. They work well for simpler melodies, but cannot be used to convey "phrasing" and are not very effective at complex syncopations, creating too stiff tablatures \cite{sayegh1989,raphael2004,radicioni2005}.
     
-    \item \textbf{Genetic Algorithms (GA):} GA approaches, as shown in Tuohy and Potter \cite{Tuohy2005} are designed to solve the problem of fretboard allocation as an evolutionary problem over the chromosome. While they are good at solving near-optimal solutions for complex fingerings, they are stochastic models and can be very expensive to compute and are not well-suited to real-time applications or high throughput web backends.
+    \item \textbf{Genetic Algorithms (GA):} GA approaches, as shown in Tuohy and Potter \cite{tuohy2005ga} are designed to solve the problem of fretboard allocation as an evolutionary problem over the chromosome. While they are good at solving near-optimal solutions for complex fingerings, they are stochastic models and can be very expensive to compute and are not well-suited to real-time applications or high throughput web backends.
     
-    \item \textbf{Probabilistic Models (HMM/Viterbi):} Hori et al. \citet{Hori2013} proposed HMM-based methods, which saw fingering as a problem of transitioning through a state space. These models use dynamic programming (Viterbi) which can cut the search space complexity from exponential $O(S^N)$ to polynomial $O(N \cdot S^2)$, where $N$ is the number of notes and $S$ is the size of the state space.
+    \item \textbf{Probabilistic Models (HMM/Viterbi):} Hori et al. \cite{hori2013} proposed HMM-based methods, which saw fingering as a problem of transitioning through a state space. These models use dynamic programming (Viterbi) which can cut the search space complexity from exponential $O(S^N)$ to polynomial $O(N \cdot S^2)$, where $N$ is the number of notes and $S$ is the size of the state space \cite{forney1973,rabiner1989}.
 
 \end{enumerate}
 
@@ -312,31 +313,35 @@ This table shows a summary of the discussed approaches, comparing them according
 
 \begin{table}[H]
     \centering
-    \begin{tabular}{|l|c|c|c|c|}
+    % X sütunu, sütun genişliklerini otomatik olarak dengeler
+    \begin{tabularx}{\textwidth}{|l|X|X|c|c|}
         \hline
-        \textbf{Methodology} & \textbf{Computational Cost} & \textbf{Global Optimality} & \textbf{Real-Time Ready} & \textbf{Data Requirement} \\
+        \textbf{Methodology} & \textbf{Comp. Cost} & \textbf{Global Optimality} & \textbf{Real-Time} & \textbf{Data Req.} \\
         \hline
         Rule-Based & Very Low & Low & Yes & None \\
-        Genetic Algorithms & Very High & High & No & Low \\
-        HMM/Viterbi & Low & High & Yes & High \\
-        \textbf{TaBee (Proposed)} & \textbf{Low} & \textbf{High} & \textbf{Yes} & \textbf{Low} \\
         \hline
-    \end{tabular}
+        Genetic Algorithms & Very High & High & No & Low \\
+        \hline
+        HMM/Viterbi & Low & High & Yes & High \\
+        \hline
+        \textbf{TaBee (Prop.)} & \textbf{Low} & \textbf{High} & \textbf{Yes} & \textbf{Low} \\
+        \hline
+    \end{tabularx}
     \caption{Comparison of Tablature Allocation Paradigms}
     \label{tab:comparison}
 \end{table}
 
 \subsection{Existing Commercial Solutions}
-The commercial products, like Celemony Melodyne \cite{Melodyne} and Riffstation \cite{Riffstation} are the most common solutions in the market, but they are considered as "black boxes". Melodyne features a very powerful polyphonic spectral separation, but doesn't have instrument-specific fretboard information: it will only generate abstract pitch information. Riffstation offers chord extraction, but it does not take into account the single-note pluck dynamics needed to obtain bassline accuracy. TaBee is distinguished by its openness, extendability and its ability to explicitly map frequencies onto a 4 string bass neck using a deterministic, cost-aware optimisation function.
+The commercial products, like Celemony Melodyne and Riffstation are the most common solutions in the market, but they are considered as "black boxes". Such tools are closely related to broader work on pitch, chord, and polyphonic music analysis \cite{fujishima1999,poliner2007}. Melodyne features a very powerful polyphonic spectral separation, but doesn't have instrument-specific fretboard information: it will only generate abstract pitch information. Riffstation offers chord extraction, but it does not take into account the single-note pluck dynamics needed to obtain bassline accuracy. TaBee is distinguished by its openness, extendability and its ability to explicitly map frequencies onto a 4 string bass neck using a deterministic, cost-aware optimisation function.
 
 \subsection{Contribution of this Study}
-This project builds on the current probabilistic models, in which the underlying algorithm is based on HMMs (which require a lot of training) instead of the Viterbi algorithm, which only has a cost-function. This separation of the DSP (Python) and optimization (domain layer) processes allows for the music to be synthesized accurately yet deliver a response time appropriate for interactive web environments, a feature not found in most academic models.
+This project builds on the current probabilistic models, in which the underlying algorithm is based on HMMs (which require a lot of training) instead of the Viterbi algorithm, which only has a cost-function. This separation of the DSP (Python) and optimization (domain layer) processes allows for the music to be synthesized accurately yet deliver a response time appropriate for interactive web environments, a feature not found in most academic models \cite{hori2013,nakamura2014,skarha2018}.
 
 \newpage
 \section{Developed Approach and System Model}
 \label{sec:system_model}
 
-TaBee has been created as an end-to-end web application for creating, storing, viewing and sharing bass guitar tab from audio recordings. It can be used as a standalone transcription script, but the system includes a modern web interface, a Spring Boot REST backend, a PostgreSQL persistence layer and a digital signal processing (DSP) core written in Python. This separation enables the user-facing product characteristics and the computational audio analysis workflow to develop separately and remain unified, as one single application.
+TaBee has been created as an end-to-end web application for creating, storing, viewing and sharing bass guitar tab from audio recordings. It can be used as a standalone transcription script, but the system includes a modern web interface, a Spring Boot REST backend, a PostgreSQL persistence layer and a digital signal processing (DSP) core written in Python. This separation enables the user-facing product characteristics and the computational audio analysis workflow to develop separately and remain unified, as one single application. This layered structure is consistent with the general view of music transcription as a chain of signal-processing and symbolic-representation stages \cite{klapuri2006,muller2015}.
 
 
 There are two key engineering challenges. First, it is required to convert the continuous audio signal into a discrete set of note events, specifying when, what, how much, and how confident they are, and the duration (just how long, or brief). Secondly, the abstract notes need to be transcribed as actual bass tablature. D2 (for example) can be played on different strings and frets depending on context. So, TaBee doesn't just detect the pitches, it adds a playability optimization stage that takes a string/fret path through the entire bass line that is coherent across the board.
@@ -452,13 +457,13 @@ The principles of object-oriented design are at the core of TaBee's implementati
 
 The Open/Closed Principle: "A software organization should be open for extension and close for modification. This is most clearly seen in TaBee's Python transcription core, which relies on the abstraction of \texttt{Fretboard} and \texttt{TabOptimizer} and doesn't rely on a specific fretboard or a specific optimization algorithm. Therefore, a new machine learning based optimizer, rule tuning, or a new genre specific playability based optimizer may be introduced as a new implementation of \texttt{TabOptimizer} without modifying \texttt{TabGenerationService} itself.
 
-In note detection, there is also the same extension point, \texttt{NoteDetectionPipeline} can be used with any type of \texttt{PitchEstimator} implementation. The current implementation is based on \texttt{OnsetPitchEstimator} which is based on pYIN, but a neural estimator of pitch or a different DSP method could be added in the future, under the same name. The pipeline would also coordinate the preprocessing, pluck detection, pitch estimation, tempo estimation and note construction without any knowledge of the internal workings of the estimator.
+In note detection, there is also the same extension point, \texttt{NoteDetectionPipeline} can be used with any type of \texttt{PitchEstimator} implementation. The current implementation is based on \texttt{OnsetPitchEstimator} which is based on pYIN \cite{mauch2014}, but a neural estimator of pitch or a different DSP method could be added in the future, under the same name. The pipeline would also coordinate the preprocessing, pluck detection, pitch estimation, tempo estimation and note construction without any knowledge of the internal workings of the estimator.
 
 \subsubsection{Dependency Inversion Principle}
 
 The Dependency Inversion Principle, too, is reflected in the core design. High level modules rely on the abstractions rather than low level details:
 
-\begin{itemize}
+\begin{itemize}[leftmargin=*, label=$\bullet$]
     \item \texttt{NoteDetectionService} depends on \texttt{AudioReader}, while \texttt{LibrosaAudioReader} is only one concrete adapter.
     \item \texttt{NoteDetectionPipeline} depends on \texttt{PitchEstimator}, while \texttt{OnsetPitchEstimator} is the current concrete estimator.
     \item \texttt{TabGenerationService} depends on \texttt{Fretboard} and \texttt{TabOptimizer}, while \texttt{BassFretboard} and \texttt{PlayabilityOptimizer} provide the default bass-specific behavior.
@@ -547,14 +552,14 @@ The Python note detection pipeline converts a raw wave to a series of note event
 
 In the preprocessing stage, silence is removed from the speech signal by applying an amplitude threshold and the signal is then normalized. This minimizes the impact of the volume difference to be captured and the effects of the onset and pitch stages on the captured input range.
 
-The onset stage is dedicated to bass plucks. Instead of each of these small spectral fluctuations being a single note, the detector identifies candidate pluck positions which are likely note attacks. These are the time points in a track that are used to anchor pitch estimation.
+The onset stage is dedicated to bass plucks. Instead of each of these small spectral fluctuations being a single note, the detector identifies candidate pluck positions which are likely note attacks. These are the time points in a track that are used to anchor pitch estimation. This follows established onset detection work based on note attacks and spectral changes in music signals \cite{bello2005,bock2012}.
 
-Pitch estimation is done not at the attack transient, but after each pluck candidate. This is useful because the initial assault on a bass note will contain noise, string contact artifacts, and unstable harmonics. The \texttt{OnsetPitchEstimator} is therefore used to read pitch from a short window following the onset. The frequency range is set to 32 Hz to 220 Hz, which is the typical low register range of bass guitar notes, with the use of librosa.pyin. The resulting frequencies are then clustered and stabilized by the estimator, to minimize octave errors and harmonics misreadings.
+Pitch estimation is done not at the attack transient, but after each pluck candidate. This is useful because the initial assault on a bass note will contain noise, string contact artifacts, and unstable harmonics. The \texttt{OnsetPitchEstimator} is therefore used to read pitch from a short window following the onset. The frequency range is set to 32 Hz to 220 Hz, which is the typical low register range of bass guitar notes, with the use of librosa.pyin. The resulting frequencies are then clustered and stabilized by the estimator, to minimize octave errors and harmonics misreadings \cite{decheveigne2002,camacho2008,mauch2014}.
 
-Tempo is estimated by measuring the interval between the onsets detected. It calculates inter-onset intervals, takes a median interval value as a strong central value and bends the resulting tempo into a favorite musical range. This stage outputs a \texttt{DetectionResult} object that includes onset time, pitch, note, tempo estimate, and detection of pluck candidates.
+Tempo is estimated by measuring the interval between the onsets detected. It calculates inter-onset intervals, takes a median interval value as a strong central value and bends the resulting tempo into a favorite musical range. This stage outputs a \texttt{DetectionResult} object that includes onset time, pitch, note, tempo estimate, and detection of pluck candidates \cite{scheirer1998,goto2001,davies2007}.
 
 \subsection{Fretboard and Playability Optimization}
-Pitch detection is not sufficient to create high quality tablature since tablature is a physical manifestation of music. On a bass guitar, there can be more than one string/fret combination to play the same pitch. TaBee implements a fretboard model and a dynamic programming optimizer to clear up this ambiguity.
+Pitch detection is not sufficient to create high quality tablature since tablature is a physical manifestation of music. On a bass guitar, there can be more than one string/fret combination to play the same pitch. TaBee implements a fretboard model and a dynamic programming optimizer to clear up this ambiguity \cite{sayegh1989,grozman2006,skarha2018}.
 
 The \texttt{BassFretboard} model can be used for standard 4 string bass tuning \texttt{EADG}, 5 string bass tuning \texttt{BEADG}, dropped-C tuning \texttt{CGCF}, and half-step-down tuning \texttt{EBABDBGB}. Numbers are written from treble to bass strings on a string. The string and fret numbers are based on the selected tuning; for standard bass, 1 is G2, 2 is D2, 3 is A1, and 4 is E1. For every note picked up by the MIDI controller, the fretboard model calculates all possible positions that can be played on the fretboard up to the set maximum fret.
 
@@ -577,7 +582,7 @@ The \texttt{BassFretboard} model can be used for standard 4 string bass tuning \
     \label{tab:tabee_pitch_to_tab}
 \end{table}
 
-It is implemented by \texttt{PlayabilityOptimizer}. It is based on a dynamic programming technique similar to the Viterbi algorithm. The state of each candidate is considered as a possible state for a note, and the movement cost between two consecutive notes is assigned for each possible move. The algorithm calculates the path cost for all the states visited and backtracks through the path to find the path with the lowest cost and recover the cost preferred path globally.
+It is implemented by \texttt{PlayabilityOptimizer}. It is based on a dynamic programming technique similar to the Viterbi algorithm \cite{forney1973}. The state of each candidate is considered as a possible state for a note, and the movement cost between two consecutive notes is assigned for each possible move. The algorithm calculates the path cost for all the states visited and backtracks through the path to find the path with the lowest cost and recover the cost preferred path globally.
 
 \begin{algorithm}[H]
     \caption{Playability-Based Fretboard Optimization}
@@ -967,7 +972,7 @@ The interpretation of the evaluation needs to take into account several limitati
 \begin{itemize}
     \item The existing assessment programme is based on a small number of monophonic bass recordings. More data and more diversity would be required for making definite generalization statements.
     \item There may be more than one string/fret assignment that is musically correct for the same pitch sequence. Therefore, in addition to the exact matches, there should be also equivalent accepted fingerings.
-    \item The existing pipeline mostly supports mono bass input.The existing pipeline is geared mostly towards mono bass input. Recordings of full-band mixes or chordal/polyphonic music are not the primary use case and should not be seen as such.
+    \item The existing pipeline mostly supports mono bass input.The existing pipeline is geared mostly towards mono bass input. Recordings of full-band mixes or chordal/polyphonic music are not the primary use case and should not be seen as such \cite{smaragdis2003,virtanen2007,benetos2013}.
     \item Local Performance Scope: Now the performance measurements are local micro benchmarks. They prove selected operations are light weight, but do not stand in for production-scale concurrent load testing.
     \item Database and mail configuration will affect full integration behaviour - External Service Availability. Automated tests explicitly do not need to use external services, which ensures that the local regression tests will not change.
 \end{itemize}
@@ -1010,11 +1015,11 @@ The algorithmic evaluation is based on the three steps described in Section \ref
 
 The controlled short-phrase subject contained 30 annotated note events. TaBee detected 30 note events, and each detected onset matched the corresponding annotated onset within the selected tolerance window. The pitch labels also matched the reference notes for this subject after running the processor with the correct dropped-C tuning option. The repeated-groove bass-stem subject was processed as a full 220.04 second track, producing 356 detected notes and 350 playable notes. For quantitative scoring, a representative riff excerpt from this subject was manually checked against the reference tab. Its onsets matched the reference events, while two pitch-level errors were observed: one octave error and one event without a stable pitch assignment. The classic-rock bass-stem subject was processed as a full 260.39 second track, producing 303 detected notes and 296 playable notes. A manually checked opening-riff excerpt contained 8 annotated pitch anchors. The repeated onset structure was matched, and six of the eight pitch anchors matched the reference; the remaining differences came from slide and upper-register articulations that were simplified in the generated event sequence. The pop/funk bass-stem subject was processed as a full 299.50 second track, producing 172 detected notes, all of which were playable. A representative syncopated groove excerpt contained 8 annotated events. All onsets were detected, but four of the eight matched events had the expected pitch label; the remaining errors came mainly from E passing tones that were detected as neighboring C-sharp notes. The odd-meter bass-stem subject was processed as a full 381.78 second track, producing 363 detected notes, all of which were playable. Its 7/4 main-riff excerpt contained 8 annotated events; seven onsets were detected, and four of those matched the expected pitch label. The remaining errors were neighboring or skipped riff tones in the repeated 7/4 pattern. The five-string funk/soul bass-stem subject was processed as a full 295.58 second track using \texttt{BEADG} tuning, producing 928 detected notes and 889 playable notes. Its evaluated low-register riff excerpt contained 8 annotated events from the five-string reference tab, and the detected onsets, pitch labels, and B-string fret positions matched the reference pattern. The half-step-down rock/punk bass-stem subject was processed as a full 179.32 second track using \texttt{EBABDBGB} tuning, producing 492 detected notes and 472 playable notes. The evaluated repeated eighth-note excerpt contained 8 annotated events; seven onsets were matched and six matched the expected pitch labels.
 
-Missed onsets, false detection of plucks and octave errors are the most probable failure modes in the pitch stage. It is especially significant with the bass guitar since in certain recordings the higher harmonics may be of higher amplitude than the fundamental frequency, causing octave errors. Because of this, octave-error counts should be reported separately from the ordinary pitch errors in the final data-set results, while inserting these results.
+Missed onsets, false detection of plucks and octave errors are the most probable failure modes in the pitch stage. It is especially significant with the bass guitar since in certain recordings the higher harmonics may be of higher amplitude than the fundamental frequency, causing octave errors. Because of this, octave-error counts should be reported separately from the ordinary pitch errors in the final data-set results, while inserting these results \cite{decheveigne2002,mauch2014}.
 
 \subsection{Fretboard Assignment Evaluation}
 
-TaBee's core domain specific feature is the fretboarding assignment stage. A generic transcription system can generate note names or pitch information in the form of MIDI, but bass tablature needs a string/fret mapping. TaBee learns to solve this as a sequence optimization problem, and implements a Viterbi style dynamic programming algorithm to select a low-cost sequence through the set of candidate positions.
+TaBee's core domain specific feature is the fretboarding assignment stage. A generic transcription system can generate note names or pitch information in the form of MIDI, but bass tablature needs a string/fret mapping. TaBee learns to solve this as a sequence optimization problem, and implements a Viterbi style dynamic programming algorithm to select a low-cost sequence through the set of candidate positions \cite{sayegh1989,hori2013,skarha2018}.
 
 \begin{table}[H]
     \centering
@@ -1128,7 +1133,7 @@ The biggest qualitative plus of the interface is that it bridges a technical app
 
 \subsection{Discussion of Limitations}
 
-There are also some weaknesses identified in the evaluation. For now, the line is geared towards mono bass recordings. Onset and pitch accuracy might be affected by full-band mixes, chords, slap artifacts, distortion or noisy environment. Second, current optimizer has deterministic playability heuristics. These are explainable and efficient but not all of the stylistic choices of fingering. Third, the current automated test suite is relatively focused on backend validation, dto mapping, security related file handling and performance microbenchmarks. The quantitative audio evaluation demonstrates the pipeline on the first seven manually checked subject groups in the evaluation dataset, but a larger annotated dataset and repeatable browser-level system tests would be needed for stronger generalization claims.
+There are also some weaknesses identified in the evaluation. For now, the line is geared towards mono bass recordings. Onset and pitch accuracy might be affected by full-band mixes, chords, slap artifacts, distortion or noisy environment. These limitations are consistent with the broader difficulty of polyphonic music transcription and source separation \cite{benetos2013,smaragdis2003,virtanen2007}. Second, current optimizer has deterministic playability heuristics. These are explainable and efficient but not all of the stylistic choices of fingering. Third, the current automated test suite is relatively focused on backend validation, dto mapping, security related file handling and performance microbenchmarks. The quantitative audio evaluation demonstrates the pipeline on the first seven manually checked subject groups in the evaluation dataset, but a larger annotated dataset and repeatable browser-level system tests would be needed for stronger generalization claims.
 
 In spite of the above restrictions, the system shows it is possible to go from audio in to tab out. The architecture is modular and allows for future improvements: the pitch estimator, fretboard model and optimizer can be replaced with new modules, and the frontend and backend already contain the product infrastructure necessary to expose new transcription results to users.
 
@@ -1137,7 +1142,7 @@ In spite of the above restrictions, the system shows it is possible to go from a
 
 The aim of this project was to create an end-to-end web-based application that generates bass guitar tabs from uploaded audio files. The project started with a real musical challenge: manual transcription is both time-consuming and many existing tools only stop at pitch detection or offer closed and non-customisable workflows. TaBee's aims to fill this void with a bass oriented audio analysis pipeline, string/fret playability optimizer, and full stack audio tab storage, rendering, playing, organising and sharing application.
 
-The finished system is proof that automatic transcription is not just a signal processing problem, but one that can be viewed as a software engineering problem. The Python core is used to detect bass note events using onset candidates and pYIN-based pitch estimation and to transform the detected pitches into playable tablature using a fretboard model and Viterbi-style dynamic programming optimizer. The Java Spring Boot backend performs validation on the uploaded file, initiates the processor under a controlled process boundary, saves the generated tabs in the database, saves references to the audio content and provides REST APIs for the user-facing components. The React frontend utilizes AlphaTab to generate results and enable product features like tab viewing and playback, playlists, favorites, discovery, profiles, and search.
+The finished system is proof that automatic transcription is not just a signal processing problem, but one that can be viewed as a software engineering problem. The Python core is used to detect bass note events using onset candidates and pYIN-based pitch estimation and to transform the detected pitches into playable tablature using a fretboard model and Viterbi-style dynamic programming optimizer \cite{bello2005,mauch2014,forney1973}. The Java Spring Boot backend performs validation on the uploaded file, initiates the processor under a controlled process boundary, saves the generated tabs in the database, saves references to the audio content and provides REST APIs for the user-facing components. The React frontend utilizes AlphaTab to generate results and enable product features like tab viewing and playback, playlists, favorites, discovery, profiles, and search.
 
 From the architectural point of view, the most important feature of TaBee is its domain-specific transcription core and the usable web platform. As the audio processor, backend services, persistence model and frontend renderer are separate modules, they can be tested and improved independently of each other. The automated test suite as it is currently configured passes 29 tests as shown in the back end test report, including tests for password validation, media validation, audio upload validation, token behavior, DTO mapping and selected performance metrics. The results confirm the reliability of the application layer, while the short-phrase audio evaluation provides a measured validation of the transcription path under the selected dropped-C tuning.
 
@@ -1162,7 +1167,7 @@ To wrap up, TaBee provides a starting point for automated generation of bass tab
 
 
 \newpage
+\nocite{*}
 \bibliographystyle{IEEEtran}
-\bibliography{references.bib} 
-
+\bibliography{references}
 \end{document}

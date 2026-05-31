@@ -9,7 +9,13 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from noteDetection import LibrosaAudioReader, NoteDetectionPipeline, NoteDetectionService
+from noteDetection import (
+    LibrosaAudioReader,
+    NoteDetectionPipeline,
+    NoteDetectionService,
+    NoteEventPostProcessor,
+    NotePostProcessConfig,
+)
 from tabGeneration import TabGenerationService, TabRenderer
 from tabGeneration.services.TabExportService import TabExportService
 
@@ -36,6 +42,19 @@ def build_parser() -> argparse.ArgumentParser:
         help="Bass tuning. EADG is standard 4-string bass, BEADG is 5-string bass, CGCF is dropped C, EBABDBGB is half-step down.",
     )
     parser.add_argument("--notes-per-line", type=int, default=16, help="ASCII tab notes per rendered line.")
+    parser.add_argument(
+        "--beats-per-bar",
+        type=int,
+        default=4,
+        choices=range(2, 13),
+        metavar="N",
+        help="Meter used by renderers that support bar grouping. Use 7 for odd-meter material such as Money.",
+    )
+    parser.add_argument(
+        "--disable-postprocess",
+        action="store_true",
+        help="Keep raw detector note events without timing quantization or duplicate collapse.",
+    )
     parser.add_argument("--print-json", action="store_true", help="Print JSON output to terminal too.")
     return parser
 
@@ -51,10 +70,14 @@ def main() -> int:
         pipeline=NoteDetectionPipeline(),
     )
     tab_service = TabGenerationService(tuning=args.tuning)
+    postprocessor = NoteEventPostProcessor(
+        NotePostProcessConfig(enabled=not args.disable_postprocess)
+    )
     renderer = TabRenderer()
     exporter = TabExportService()
 
-    detection = detection_service.analyze_file(str(audio_path))
+    raw_detection = detection_service.analyze_file(str(audio_path))
+    detection = postprocessor.process(raw_detection)
     assignments = tab_service.generate_from_detection_result(detection)
 
     json_data = exporter.to_json_dict(
@@ -62,6 +85,7 @@ def main() -> int:
         detection=detection,
         assignments=assignments,
         tuning=args.tuning,
+        beats_per_bar=args.beats_per_bar,
     )
     string_numbers = (1, 2, 3, 4, 5) if args.tuning == "BEADG" else (1, 2, 3, 4)
     string_labels = {1: "Gb", 2: "Db", 3: "Ab", 4: "Eb"} if args.tuning == "EBABDBGB" else None
@@ -80,6 +104,8 @@ def main() -> int:
 
     print(f"Tempo: {detection.tempo_bpm} BPM")
     print(f"Detected notes: {len(assignments)}")
+    if not args.disable_postprocess:
+        print(f"Raw detected notes: {len(raw_detection.notes)}")
     print(f"Playable notes: {json_data['summary']['playableNotes']}")
     print(f"JSON output: {json_out}")
     print(f"ASCII tab output: {ascii_out}")
